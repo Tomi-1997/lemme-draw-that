@@ -1,19 +1,34 @@
 <!DOCTYPE html>
 <html lang="en">
+
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Shared Canvas</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.0/socket.io.js"></script>
     <script src="/static/script.js"></script>
-    <style>
-        canvas 
-		{
-            border: 1px solid black;
-        }
-    </style>
+    <link rel="stylesheet" href="/static/style.css"> 
 </head>
+
+
 <body>
-    <canvas id="canvas" width="800" height="600"></canvas>
+
+    <!-- Button row above canvas -->
+    <div class="button-row">
+        <button class="button" onclick="onClearOrigin()">CLEAR</button>
+        <button class="button">UNDO</button>
+        <button class="button">ERASER</button>
+    </div>
+    <!-- Canvas and text above it -->
+    <div id ="canvas-holder" >
+    <p id="info-el"></p>
+    <canvas id="canvas" width="300" height="300"></canvas>
+    </div>
+
+
 </body>
+
+
+
 </html>
