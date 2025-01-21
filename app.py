@@ -3,6 +3,8 @@ from flask_socketio import SocketIO
 
 app = Flask(__name__)
 socket_io = SocketIO(app)
+history = []  # List of strokes
+stroke = []  # List of recently drawn lines
 
 
 @app.route('/')
@@ -11,8 +13,18 @@ def index():
 
 
 @socket_io.on('draw')
-def handle_draw(draw_data):
-    socket_io.emit('draw', draw_data, include_self=False)
+def handle_draw(data):
+    socket_io.emit('draw', data, include_self=False)
+    # stroke.append(data)
+
+
+@socket_io.on('draw_done')
+def handle_draw(data):
+    socket_io.emit('draw_done', data, include_self=False)
+    # history.append(stroke)
+    # stroke.clear()
+    # print('------------------------')
+    # print(len(history))
 
 
 @socket_io.on('clear')

@@ -4,36 +4,18 @@ html, body
     background-size: cover;
     background-repeat: no-repeat;
     background-attachment: fixed;
+}
 
+body
+{
+    font-family:'Courier New', Courier, monospace;
     display: flex;
     flex-direction: column;
     justify-content: center; /* Center horizontally */
     align-items: center; /* Center vertically */
-    height: 100vh; /* Full viewport height */
+    height: 90vh; /* Full viewport height */
     margin: 0; /* Remove default margin */
-}
-
-.button-row 
-{
-    display: flex; /* Use flexbox for the button row */
-    gap: 20px; /* Space between buttons */
-    margin-bottom: 20px; /* Space between buttons and the div */
-}
-
-.button 
-{
-    padding: 10px 20px; /* Button padding */
-    background-color: gray; /* Button background color */
-    color: gainsboro; /* Button text color */
-    border: none; /* Remove border */
-    border-radius: 5px; /* Rounded corners */
-    cursor: pointer; /* Pointer cursor on hover */
-    transition: 0.3s ease-in-out transform; /* Smooth background color transition */
-}
-
-.button:hover 
-{
-    transform: scale(1.25);
+    cursor: default; /* Default cursor */
 }
 
 .canvas-holder
@@ -52,6 +34,7 @@ canvas
     border-radius: 10px;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
     animation: pop 0.5s ease forwards;
+    background-color: rgb(30, 30, 30);
 }
 
 @keyframes pop {
@@ -66,4 +49,81 @@ canvas
     100% {
         transform: scale(1);
     }
+}
+
+.button-row 
+{
+    display: flex; /* Use flexbox for the button row */
+    gap: 20px; /* Space between buttons */
+    margin-bottom: 20px; /* Space between buttons and the div */
+}
+
+.button-container {
+    position: relative;
+    /* margin: 10px; */
+}
+
+.button 
+{
+    font-family:'Times New Roman', Times, serif;
+    padding: 10px 20px; /* Button padding */
+    background-color: gray; /* Button background color */
+    color: rgb(220, 220, 220); /* Button text color */
+    border: none; /* Remove border */
+    border-radius: 5px; /* Rounded corners */
+    cursor: pointer; /* Pointer cursor on hover */
+    transition: 0.3s ease-in-out transform; /* Smooth background color transition */
+    font-size: large;
+
+}
+
+.button:hover
+{
+    transform: scale(1.15);
+}
+
+
+
+
+.info-circle {
+    position: absolute;
+    top: -30px; /* Adjust this value to move the circle higher or lower */
+    right: -15px; /* Align to the right */
+    text-align: center;
+    display: inline-block;
+    opacity: 0.25;
+}
+
+
+.info-icon {
+    color: gainsboro;
+    border-radius: 40%;
+    padding-left: 5px;
+    padding-right: 5px;
+    font-size: 14px;
+    border: 2px solid gray;
+    background-color: transparent;
+    display: inline-block;
+}
+
+.info-text {
+    position: absolute;
+    left: 30px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 16px;
+    white-space: nowrap;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+    pointer-events: none;
+    background-color: #2C2C2C;
+    z-index: 1;
+}
+
+.info-circle:hover .info-text {
+    opacity: 1;
+}
+
+.info-circle:hover{
+    opacity: 1;
 }

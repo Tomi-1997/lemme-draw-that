@@ -7,13 +7,17 @@ let ctx = null;
 let socket = null;
 let info = null;
 
-
 /* Drawing vars */
+let erasing = false;
 let drawing = false;
 let lastX = 0;
 let lastY = 0;
-const userColor = '#ffffffff';
-
+const brushColor = '#dcdcdc';
+const brushSize = 1;
+const eraserColor = 'rgb(30, 30, 30)';
+const eraserSize = 10;
+let userColor = brushColor;
+let userSize = brushSize;
 
 /* Work queue, to let other clients paint on screen */
 var workQueue = []
@@ -48,8 +52,8 @@ function setCanvasSize(canvas)
         canvas.height = 200;
     } else 
     {
-        canvas.width = 600;
-        canvas.height = 400;
+        canvas.width = 800;
+        canvas.height = 500;
     }
 }
 
@@ -65,6 +69,23 @@ function onClearOrigin()
 {
     onClear();
     socket.emit('clear', {});
+}
+
+function onEraser(button)
+{
+    erasing = !erasing;
+    if (erasing)
+    {
+        userColor = eraserColor;
+        userSize = eraserSize;
+        button.innerText = "BRUSH";
+    }
+    else
+    {
+        userColor = brushColor;
+        userSize = brushSize;
+        button.innerText = "ERASER";
+    }
 }
 
 function getPosition(e) 
@@ -86,6 +107,8 @@ function onPress(e)
 
 function onMove(e)
 {
+    ctx.strokeStyle = userColor;
+    ctx.lineWidth = userSize;
     pos = getPosition(e);
     x = pos.x;
     y = pos.y;
@@ -99,7 +122,7 @@ function onMove(e)
     let normLY = lastY / canvas.height;
     
     // Emit the drawing data to other clients
-    socket.emit('draw', { normX, normY, normLX, normLY, color:userColor});
+    socket.emit('draw', { normX, normY, normLX, normLY, userColor, userSize});
     
     // Update lastX and lastY
     lastX = x;
@@ -114,16 +137,23 @@ function onUnpress(e)
     {
         (workQueue.pop())();
     }
+    socket.emit('draw_done', {});
 }
 
 function otherDraw(data)
 {
     ctx.strokeStyle = data.userColor;
+    ctx.lineWidth = data.userSize;
     ctx.beginPath();
     ctx.moveTo(data.normLX * canvas.width, data.normLY * canvas.height);
     ctx.lineTo(data.normX * canvas.width, data.normY * canvas.height);
     ctx.stroke();
     ctx.closePath();
+}
+
+function otherDrawDone(data)
+{
+
 }
 
 function addEvents()
