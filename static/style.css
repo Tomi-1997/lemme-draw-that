@@ -14,8 +14,7 @@ body
     flex-direction: column;
     justify-content: center; /* Center horizontally */
     align-items: center; /* Center vertically */
-    height: 90vh; /* Full viewport height */
-    margin: 0; /* Remove default margin */
+    margin-top: 5%; /* Remove default margin */
     cursor: default; /* Default cursor */
 }
 
@@ -57,9 +56,13 @@ canvas
 
 .button-row 
 {
-    display: flex; /* Use flexbox for the button row */
     gap: 20px; /* Space between buttons */
     margin-bottom: 20px; /* Space between buttons and the div */
+
+    text-align: center;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
 
@@ -116,6 +119,7 @@ canvas
 
 
 .info-text {
+    color: gainsboro;
     position: absolute;
     left: 30px;
     top: 50%;
@@ -153,4 +157,10 @@ p
     background-color: rgb(30, 30, 30);
     color: rgb(220, 220, 220); /* Button text color */
     font-size: large;
+}
+
+.removeable:hover
+{
+    cursor: pointer;
+    font-weight: bold;
 }

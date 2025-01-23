@@ -4,8 +4,8 @@
 
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=0.5">
-    <title>Shared Canvas</title>
+    <meta name="viewport" content="width=device-width, minimum-scale=1.0">
+    <title>Lemme-draw-that</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.0/socket.io.js"></script>
     <script src="/static/script.js"></script>
     <link rel="stylesheet" href="/static/style.css"> 
@@ -56,7 +56,7 @@
                 <div class="info-text">Save current canvas.</div>
                 
             </div>
-            <button class="button">SAVE</button>
+            <button class="button" onclick="save()">SAVE</button>
         </div>
 
 
@@ -71,13 +71,16 @@
 
         
     </div>
+
+    
     <!-- Canvas and text above it -->
     <div id ="canvas-holder" >
         <canvas id="canvas" width="300" height="300"></canvas>
     </div>
 
     <!-- wbr = empty char to keep ratio size the same -->
-    <p id="info-el"><wbr /></p>
+    <p id="info-el" class = "removeable"
+     onclick="(() => this.innerText='\n')()"><wbr /></p>
 
 
 </body>

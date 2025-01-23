@@ -13,9 +13,9 @@ let drawing = false;
 let lastX = 0;
 let lastY = 0;
 const brushColor = '#dcdcdc';
-const brushSize = 1;
-const eraserColor = 'rgb(30, 30, 30)';
-const eraserSize = 20;
+const brushSize = 2;
+const eraserColor = '#1e1e1e';
+const eraserSize = 40;
 let userColor = brushColor;
 let userSize = brushSize;
 
@@ -160,7 +160,7 @@ function onPress(e)
 }
 
 
-// Actually draw on canvas, and emit on socket
+// Actually draw on canvas, and EMIT on socket
 function onMove(e)
 {
     ctx.strokeStyle = userColor;
@@ -168,8 +168,20 @@ function onMove(e)
     pos = getPosition(e);
     x = pos.x;
     y = pos.y;
-    ctx.lineTo(x, y);
-    ctx.stroke();
+
+    if (erasing)
+    {
+        ctx.fillStyle = userColor;
+        ctx.beginPath();
+        ctx.arc(x, y, userSize / 2, 0, Math.PI * 2, false); // Draw a circle
+        ctx.fill();
+    }
+
+    else
+    {
+        ctx.lineTo(x, y);
+        ctx.stroke();
+    }
 
     let normX = x / canvas.width;
     let normY = y / canvas.height;
@@ -178,7 +190,8 @@ function onMove(e)
     let normLY = lastY / canvas.height;
     
     // Emit the drawing data to other clients
-    socket.emit('draw', { normX, normY, normLX, normLY, userColor, userSize});
+    socket.emit('draw', { normX, normY, normLX, normLY, 
+        userColor, userSize, erasing});
     
     // Update lastX and lastY
     lastX = x;
@@ -204,6 +217,21 @@ function otherDraw(data)
 {
     ctx.strokeStyle = data.userColor;
     ctx.lineWidth = data.userSize;
+
+    if (data.erasing)
+    {
+        ctx.fillStyle = data.userColor;
+        let r = data.userSize / 2;
+        let x = data.normLX * canvas.width;
+        let y = data.normY * canvas.height;
+
+        ctx.beginPath();
+        ctx.arc(x, y, r, 0, Math.PI * 2, false);
+        ctx.fill();
+        return;    
+    }
+
+
     ctx.beginPath();
     ctx.moveTo(data.normLX * canvas.width, data.normLY * canvas.height);
     ctx.lineTo(data.normX * canvas.width, data.normY * canvas.height);
@@ -216,6 +244,116 @@ function otherDraw(data)
 function otherDrawDone(data)
 {
 
+}
+
+
+// Random integer in range [min, max)
+function randInt(min, max) 
+{
+    if (min === max) return max;
+    if (min > max) return randInt(max, min);
+    return Math.floor(Math.random() * (max - min) + min);
+}
+
+
+// Request random word by length
+async function getRandomWord(len) 
+{
+
+    const url = 
+    'https://random-word-api.vercel.app/api?words=1&length='
+    + len
+    + '&type=capitalized';
+    const timeout = 2000;
+
+    // Create a promise that fetches the random word
+    const fetchPromise = fetch(url)
+        .then(response => 
+            {
+            if (!response.ok) 
+                {
+                throw new Error('Network response was not ok');
+                }
+            return response.json();
+        });
+
+    // Create a timeout promise
+    const timeoutPromise = new Promise((_, reject) => 
+        {
+        setTimeout(() => 
+            {
+            reject(new Error('Request timed out'));
+            }, timeout);
+    });
+
+    try 
+    {
+        // Wait for either the fetch or the timeout
+        const word = await Promise.race([fetchPromise, timeoutPromise]);
+        return word[0];
+    } 
+
+    catch (error) 
+    {
+        console.error('Error:', error.message);
+        return randomWordHardCoded();
+    }
+}
+
+
+// Unable to get from API, get a random word from a list
+function randomWordHardCoded()
+{
+    let words = ['Cat', 'Dog', 'Fish', 'Tree', 'Star',
+         'Moon', 'Sun', 'Ball', 'Duck', 'Bear', 'Car',
+          'Boat', 'House', 'Bird', 'Frog', 'Cake', 'Hat',
+           'Pine', 'Rock', 'Bunny', 'Lion', 'Taco', 'Panda',
+            'Sled', 'Skate', 'Ring', 'Flag', 'Wave', 'Cloud',
+             'Bee', 'Ant', 'Egg', 'Cup', 'Sock', 'Nose', 'Foot',
+              'Mug', 'Pail', 'Kite', 'Pond', 'Park', 'Road', 'Cave',
+               'Nest', 'Drum', 'Pillow', 'Rocket', 'Monster', 'Guitar', 'Rainbow']
+
+    return words[randInt(0, words.length)]
+}
+
+
+function save()
+{
+    const dataURL = canvas.toDataURL('image/png');
+
+    fetch('/upload', 
+        {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ image: dataURL }),
+    })
+    .then(response => response.json())
+    .then(data => {
+        console.log('Success:', data);
+    })
+    .catch((error) => {
+        console.error('Error:', error);
+    });
+    
+}
+
+function load(data)
+{
+    const img = new Image();
+    img.src = data.image;
+
+    // Draw the image on the canvas once it has loaded
+    img.onload = function() 
+    {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+    };
+
+    img.onerror = function() 
+    {
+    };
 }
 
 
@@ -292,6 +430,11 @@ function addEvents()
                 onGuess(data);
             });
 
+        socket.on('load', (data) => 
+            {
+                load(data);
+            });
+
         document.addEventListener('keydown', (event) => 
             {
                 if (event.key === 'e')
@@ -301,74 +444,5 @@ function addEvents()
         
 }
 
-
-// Random integer in range [min, max)
-function randInt(min, max) 
-{
-    if (min === max) return max;
-    if (min > max) return randInt(max, min);
-    return Math.floor(Math.random() * (max - min) + min);
-}
-
-
-// Request random word by length
-async function getRandomWord(len) 
-{
-
-    const url = 
-    'https://random-word-api.vercel.app/api?words=1&length='
-    + len
-    + '&type=capitalized';
-    const timeout = 2000;
-
-    // Create a promise that fetches the random word
-    const fetchPromise = fetch(url)
-        .then(response => 
-            {
-            if (!response.ok) 
-                {
-                throw new Error('Network response was not ok');
-                }
-            return response.json();
-        });
-
-    // Create a timeout promise
-    const timeoutPromise = new Promise((_, reject) => 
-        {
-        setTimeout(() => 
-            {
-            reject(new Error('Request timed out'));
-            }, timeout);
-    });
-
-    try 
-    {
-        // Wait for either the fetch or the timeout
-        const word = await Promise.race([fetchPromise, timeoutPromise]);
-        return word[0];
-    } 
-
-    catch (error) 
-    {
-        console.error('Error:', error.message);
-        return randomWordHardCoded();
-    }
-}
-
-
-// Unable to get from API, get a random word from a list
-function randomWordHardCoded()
-{
-    let words = ['Cat', 'Dog', 'Fish', 'Tree', 'Star',
-         'Moon', 'Sun', 'Ball', 'Duck', 'Bear', 'Car',
-          'Boat', 'House', 'Bird', 'Frog', 'Cake', 'Hat',
-           'Pine', 'Rock', 'Bunny', 'Lion', 'Taco', 'Panda',
-            'Sled', 'Skate', 'Ring', 'Flag', 'Wave', 'Cloud',
-             'Bee', 'Ant', 'Egg', 'Cup', 'Sock', 'Nose', 'Foot',
-              'Mug', 'Pail', 'Kite', 'Pond', 'Park', 'Road', 'Cave',
-               'Nest', 'Drum', 'Pillow', 'Rocket', 'Monster', 'Guitar', 'Rainbow']
-
-    return words[randInt(0, words.length)]
-}
 
 console.log('JS End')
