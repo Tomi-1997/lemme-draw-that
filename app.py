@@ -32,5 +32,10 @@ def handle_draw(data):
     socket_io.emit('clear', data, include_self=False)
 
 
+@socket_io.on('guess')
+def handle_guess(data):
+    socket_io.emit('guess', data, include_self=False)
+
+
 if __name__ == '__main__':
     socket_io.run(app, allow_unsafe_werkzeug=True, host='0.0.0.0', port=8080, debug=True)

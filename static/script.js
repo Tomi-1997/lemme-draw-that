@@ -15,9 +15,10 @@ let lastY = 0;
 const brushColor = '#dcdcdc';
 const brushSize = 1;
 const eraserColor = 'rgb(30, 30, 30)';
-const eraserSize = 10;
+const eraserSize = 20;
 let userColor = brushColor;
 let userSize = brushSize;
+
 
 /* Work queue, to let other clients paint on screen */
 var workQueue = []
@@ -44,6 +45,8 @@ window.addEventListener('load', function()
     addEvents();
 });
 
+
+// Set canvas size, based on page size (phone / pc)
 function setCanvasSize(canvas)
 {
     if (window.innerWidth <= 600) 
@@ -57,6 +60,8 @@ function setCanvasSize(canvas)
     }
 }
 
+
+// Someone else pressed clear
 function onClear()
 {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -65,12 +70,16 @@ function onClear()
     canvas.style.animation = ''; // Reapply the 
 }
 
+
+// Clear button press
 function onClearOrigin()
 {
     onClear();
     socket.emit('clear', {});
 }
 
+
+// Eraser button press
 function onEraser(button)
 {
     erasing = !erasing;
@@ -78,16 +87,59 @@ function onEraser(button)
     {
         userColor = eraserColor;
         userSize = eraserSize;
-        button.innerText = "BRUSH";
+        button.innerText = "[E]DITOR";
     }
     else
     {
         userColor = brushColor;
         userSize = brushSize;
-        button.innerText = "ERASER";
+        button.innerText = "[E]RASER";
     }
+
+    button.style.animation = 'none';
+    button.offsetHeight;
+    button.style.animation = "pop 0.2s ease forwards";
 }
 
+
+// Guesser button press
+function onGuessOrigin()
+{
+    let desiredLen = randInt(3, 5); // 3 or 4
+    info.innerText = "(\tGENERATING...\t)";
+    getRandomWord(desiredLen).then
+    (word => 
+    {
+        let len = word.length;
+        info.innerText = "(\tDRAW: " + word + "\t)";
+        guessReanimate();
+        socket.emit('guess', {len});
+    });
+}
+
+
+// Guesser button press
+function onGuess(data)
+{
+    let len = "";
+    for (let i = 0; i < data.len; i++)
+    {
+        len = len + "_ ";
+    }
+    info.innerText = "(\tGUESS: " + len + "\t)";
+    guessReanimate();
+}
+
+
+function guessReanimate()
+{
+    info.style.animation = 'none';
+    info.offsetHeight;
+    info.style.animation = "pop 1s ease forwards";
+}
+
+
+// Guess pointer / cursor position on canvas
 function getPosition(e) 
 {
     const rect = canvas.getBoundingClientRect();
@@ -96,6 +148,8 @@ function getPosition(e)
     return { x, y };
 }
 
+
+// Begin drawing path
 function onPress(e)
 {
     pos = getPosition(e);
@@ -105,6 +159,8 @@ function onPress(e)
     ctx.moveTo(lastX, lastY);
 }
 
+
+// Actually draw on canvas, and emit on socket
 function onMove(e)
 {
     ctx.strokeStyle = userColor;
@@ -129,6 +185,8 @@ function onMove(e)
     lastY = y;
 }
 
+
+// Finished, check if others need to draw
 function onUnpress(e)
 {
     drawing = false;
@@ -140,6 +198,8 @@ function onUnpress(e)
     socket.emit('draw_done', {});
 }
 
+
+// Draw others
 function otherDraw(data)
 {
     ctx.strokeStyle = data.userColor;
@@ -151,11 +211,15 @@ function otherDraw(data)
     ctx.closePath();
 }
 
+
+// Draw others finished
 function otherDrawDone(data)
 {
 
 }
 
+
+// Listeners - mouse press, mouse move, mouse up, socker events
 function addEvents()
 {
     canvas.addEventListener('mousedown', (e) => 
@@ -223,10 +287,88 @@ function addEvents()
                 }
             });
 
+        socket.on('guess', (data) => 
+            {
+                onGuess(data);
+            });
+
+        document.addEventListener('keydown', (event) => 
+            {
+                if (event.key === 'e')
+                    { onEraser(document.getElementById('eraser-button'));}
+            });
+
         
 }
 
 
+// Random integer in range [min, max)
+function randInt(min, max) 
+{
+    if (min === max) return max;
+    if (min > max) return randInt(max, min);
+    return Math.floor(Math.random() * (max - min) + min);
+}
 
+
+// Request random word by length
+async function getRandomWord(len) 
+{
+
+    const url = 
+    'https://random-word-api.vercel.app/api?words=1&length='
+    + len
+    + '&type=capitalized';
+    const timeout = 2000;
+
+    // Create a promise that fetches the random word
+    const fetchPromise = fetch(url)
+        .then(response => 
+            {
+            if (!response.ok) 
+                {
+                throw new Error('Network response was not ok');
+                }
+            return response.json();
+        });
+
+    // Create a timeout promise
+    const timeoutPromise = new Promise((_, reject) => 
+        {
+        setTimeout(() => 
+            {
+            reject(new Error('Request timed out'));
+            }, timeout);
+    });
+
+    try 
+    {
+        // Wait for either the fetch or the timeout
+        const word = await Promise.race([fetchPromise, timeoutPromise]);
+        return word[0];
+    } 
+
+    catch (error) 
+    {
+        console.error('Error:', error.message);
+        return randomWordHardCoded();
+    }
+}
+
+
+// Unable to get from API, get a random word from a list
+function randomWordHardCoded()
+{
+    let words = ['Cat', 'Dog', 'Fish', 'Tree', 'Star',
+         'Moon', 'Sun', 'Ball', 'Duck', 'Bear', 'Car',
+          'Boat', 'House', 'Bird', 'Frog', 'Cake', 'Hat',
+           'Pine', 'Rock', 'Bunny', 'Lion', 'Taco', 'Panda',
+            'Sled', 'Skate', 'Ring', 'Flag', 'Wave', 'Cloud',
+             'Bee', 'Ant', 'Egg', 'Cup', 'Sock', 'Nose', 'Foot',
+              'Mug', 'Pail', 'Kite', 'Pond', 'Park', 'Road', 'Cave',
+               'Nest', 'Drum', 'Pillow', 'Rocket', 'Monster', 'Guitar', 'Rainbow']
+
+    return words[randInt(0, words.length)]
+}
 
 console.log('JS End')

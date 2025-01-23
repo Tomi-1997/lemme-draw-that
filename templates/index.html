@@ -4,7 +4,7 @@
 
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=0.4">
+    <meta name="viewport" content="width=device-width, initial-scale=0.5">
     <title>Shared Canvas</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.0/socket.io.js"></script>
     <script src="/static/script.js"></script>
@@ -21,7 +21,7 @@
         <div class="button-container">
             <div class="info-circle">
                 <div class="info-icon">?</div>
-                <div class="info-text">This is more information.</div>
+                <div class="info-text">Reset the canvas.</div>
                 
             </div>
             <button class="button" onclick="onClearOrigin()">CLEAR</button>
@@ -31,17 +31,18 @@
         <div class="button-container">
             <div class="info-circle">
                 <div class="info-icon">?</div>
-                <div class="info-text">This is more information.</div>
+                <div class="info-text">Switch brush modes.</div>
                 
             </div>
-            <button class="button" onclick="onEraser(this)">ERASER</button>
+            <button id="eraser-button" class="button" 
+            onclick="onEraser(this)">[E]RASER</button>
         </div>
 
         
         <div class="button-container">
             <div class="info-circle">
                 <div class="info-icon">?</div>
-                <div class="info-text">This is more information.</div>
+                <div class="info-text">Get a random word, others get the length.</div>
                 
             </div>
             <button class="button" onclick="onGuessOrigin()">GUESSER</button>
@@ -52,7 +53,7 @@
         <div class="button-container">
             <div class="info-circle">
                 <div class="info-icon">?</div>
-                <div class="info-text">This is more information.</div>
+                <div class="info-text">Save current canvas.</div>
                 
             </div>
             <button class="button">SAVE</button>
@@ -62,7 +63,7 @@
         <div class="button-container">
             <div class="info-circle">
                 <div class="info-icon">?</div>
-                <div class="info-text">This is more information.</div>
+                <div class="info-text">View previous canvases, load one.</div>
                 
             </div>
             <button class="button">LOAD</button>
@@ -72,9 +73,11 @@
     </div>
     <!-- Canvas and text above it -->
     <div id ="canvas-holder" >
-    <p id="info-el"></p>
-    <canvas id="canvas" width="300" height="300"></canvas>
+        <canvas id="canvas" width="300" height="300"></canvas>
     </div>
+
+    <!-- wbr = empty char to keep ratio size the same -->
+    <p id="info-el"><wbr /></p>
 
 
 </body>
