@@ -14,65 +14,91 @@
 
 <body>
 
-    <!-- Button row above canvas -->
-    <div class="button-row">
-
+    <!-- HOST & JOIN -->
+    <div id = "hNj" class="button-row">
+        <div class="button-container">
+            <div class="info-circle">
+                <div class="info-icon">?</div>
+                <div class="info-text">Host a room and invite others.</div>
+                
+            </div>
+            <button class="button" onclick="onHost(this)">HOST</button>
+        </div>
 
         <div class="button-container">
             <div class="info-circle">
                 <div class="info-icon">?</div>
-                <div class="info-text">Reset the canvas to all.</div>
+                <div class="info-text">Join a room others created.</div>
                 
             </div>
-            <button class="button" onclick="onClearOrigin(this)">CLEAR</button>
+            <button class="button" onclick="onJoin(this)">JOIN</button>
         </div>
-
-
-        <div class="button-container">
-            <div class="info-circle">
-                <div class="info-icon">?</div>
-                <div class="info-text">Switch brush modes locally.</div>
-                
-            </div>
-            <button id="eraser-button" class="button" 
-            onclick="onEraser(this)">[E]RASER</button>
-        </div>
-
-        
-        <div class="button-container">
-            <div class="info-circle">
-                <div class="info-icon">?</div>
-                <div class="info-text">Get a random word, others get the length.</div>
-                
-            </div>
-            <button class="button" onclick="onGuessOrigin()">GUESSER</button>
-        </div>
-
-
-
-        <div class="button-container">
-            <div class="info-circle">
-                <div class="info-icon">?</div>
-                <div class="info-text">Save current canvas locally.</div>
-                
-            </div>
-            <button class="button" onclick="saveAsPng(this)">SAVE</button>
-        </div>
-
-
-        
     </div>
 
-    
-    <!-- Canvas and text above it -->
-    <div id ="canvas-holder" >
-        <canvas id="canvas" width="300" height="300"></canvas>
+    <!-- BUTTONS & CANVAS -->
+    <div id = "content" style="display: none;">
+        <!-- Button row above canvas -->
+        <div class="button-row">
+
+
+            <div class="button-container">
+                <div class="info-circle">
+                    <div class="info-icon">?</div>
+                    <div class="info-text">Reset the canvas to all.</div>
+                    
+                </div>
+                <button class="button" onclick="onClearOrigin(this)">CLEAR</button>
+            </div>
+
+
+            <div class="button-container">
+                <div class="info-circle">
+                    <div class="info-icon">?</div>
+                    <div class="info-text">Switch brush modes locally.</div>
+                    
+                </div>
+                <button id="eraser-button" class="button" 
+                onclick="onEraser(this)">[E]RASER</button>
+            </div>
+
+            
+            <div class="button-container">
+                <div class="info-circle">
+                    <div class="info-icon">?</div>
+                    <div class="info-text">Get a random word, others get the length.</div>
+                    
+                </div>
+                <button class="button" onclick="onGuessOrigin()">GUESSER</button>
+            </div>
+
+
+
+            <div class="button-container">
+                <div class="info-circle">
+                    <div class="info-icon">?</div>
+                    <div class="info-text">Save current canvas locally.</div>
+                    
+                </div>
+                <button class="button" onclick="saveAsPng(this)">SAVE</button>
+            </div>
+
+
+            
+        </div>
+
+        
+        <!-- Canvas and text above it -->
+        <div id ="canvas-holder" >
+            <canvas id="canvas" width="300" height="300"></canvas>
+        </div>
     </div>
 
     <!-- wbr = empty char to keep ratio size the same -->
-    <p id="info-el" class = "removeable"
-     onclick="(() => this.innerText='\n')()"><wbr /></p>
+    <p id="room-info-el"><wbr /></p>
 
+    <!-- wbr = empty char to keep ratio size the same -->
+    <p id="info-el" class = "removeable"
+    onclick="(() => this.innerText='\n')()"><wbr /></p>
 
 </body>
 

@@ -156,10 +156,11 @@ canvas
     transition: opacity 0.3s ease;
 }
 
+
 p
 {
-    box-shadow: 0 1px 8px gray;
-    background-color: rgb(30, 30, 30);
+    box-shadow: 0px 0px 8px gray;
+    /* background-color: rgb(30, 30, 30); */
     color: rgb(220, 220, 220); /* Button text color */
     font-size: large;
 }

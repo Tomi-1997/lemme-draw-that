@@ -60,6 +60,55 @@ function setCanvasSize(canvas)
 }
 
 
+//
+function onHost(button)
+{
+    button.innerText = 'HOSTING'
+    socket.emit('host');
+
+}
+
+
+//
+function onJoin(button)
+{
+    let code = prompt("Enter code:");
+
+    // If empty
+    if (!code)
+    {
+        onJoinFail(button);
+        return;
+    }
+
+    // Remove whitespace
+    code = code.trim();
+    if (code.length === 0)
+    {
+        onJoinFail(button);
+        return;
+    }
+
+    // Expected: 4 letters, both under and uppercase, and 2 numbers.
+    const codePattern = /^(?=(?:.*[a-z]){4})(?=(?:.*[0-9]){2})[a-z0-9]{6}$/; 
+    if (!codePattern.test(code))
+    {
+        onJoinFail(button);
+        return;
+    }
+
+    socket.emit('join', {code});
+}
+
+
+//
+function onJoinFail(button)
+{
+    alert("Wrong format.");
+    disableXForYSec(button, 2000);
+}
+
+
 // Someone else pressed clear
 function onClear()
 {
@@ -412,11 +461,25 @@ function addEvents()
                 }
             });
 
+
         socket.on('guess', (data) => 
             {
                 onGuess(data);
             });
 
+
+        socket.on('room_code', (data) => 
+            {
+                if (data.code === '-1') 
+                {
+                    alert("Wrong code!");
+                    return;
+                }
+                currentRoom = data.code;
+                document.getElementById('room-info-el').innerText = "Room code: " + currentRoom;
+                document.getElementById('content').style.display = 'block';
+                document.getElementById('hNj').style.display = 'none';
+        });
 
         // Press e, swap brush / eraser modes
         document.addEventListener('keydown', (event) => 
