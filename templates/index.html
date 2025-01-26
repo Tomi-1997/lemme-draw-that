@@ -21,17 +21,17 @@
         <div class="button-container">
             <div class="info-circle">
                 <div class="info-icon">?</div>
-                <div class="info-text">Reset the canvas.</div>
+                <div class="info-text">Reset the canvas to all.</div>
                 
             </div>
-            <button class="button" onclick="onClearOrigin()">CLEAR</button>
+            <button class="button" onclick="onClearOrigin(this)">CLEAR</button>
         </div>
 
 
         <div class="button-container">
             <div class="info-circle">
                 <div class="info-icon">?</div>
-                <div class="info-text">Switch brush modes.</div>
+                <div class="info-text">Switch brush modes locally.</div>
                 
             </div>
             <button id="eraser-button" class="button" 
@@ -53,21 +53,12 @@
         <div class="button-container">
             <div class="info-circle">
                 <div class="info-icon">?</div>
-                <div class="info-text">Save current canvas.</div>
+                <div class="info-text">Save current canvas locally.</div>
                 
             </div>
-            <button class="button" onclick="save()">SAVE</button>
+            <button class="button" onclick="saveAsPng(this)">SAVE</button>
         </div>
 
-
-        <div class="button-container">
-            <div class="info-circle">
-                <div class="info-icon">?</div>
-                <div class="info-text">View previous canvases, load one.</div>
-                
-            </div>
-            <button class="button">LOAD</button>
-        </div>
 
         
     </div>

@@ -3,11 +3,11 @@ import base64
 from flask import Flask, render_template, request, jsonify
 from flask_socketio import SocketIO
 
-from ConsArray import ConsArray
+from ConstantArray import ConstantArray
 
 app = Flask(__name__)
 socket_io = SocketIO(app)
-stroke = ConsArray()
+stroke = ConstantArray()
 
 
 @app.route('/')
@@ -28,48 +28,50 @@ def handle_draw(data):
 
 @socket_io.on('clear')
 def handle_draw(data):
+    print(f'{request.sid} Clears board.')
     socket_io.emit('clear', data, include_self=False)
     stroke.clear()
 
 
 @socket_io.on('guess')
 def handle_guess(data):
+    print(f'{request.sid} Sends guess.')
     socket_io.emit('guess', data, include_self=False)
 
 
-@app.route('/upload', methods=['POST'])
-def upload():
-    data = request.get_json()
-    image_data = data['image']
-
-    # Remove the prefix (data:image/png;base64,)
-    header, encoded = image_data.split(',', 1)
-    binary_data = base64.b64decode(encoded)
-
-    # Save the image to a file
-    with open('canvas_image.png', 'wb') as f:
-        f.write(binary_data)
-
-    return jsonify({'message': 'Image saved successfully!'})
-
-
-def load():
-    with open('canvas_image.png', 'rb') as f:
-        encoded_string = base64.b64encode(f.read()).decode('utf-8')
-
-    data = {
-        'message': 'Welcome to the canvas!',
-        'image': f'data:image/png;base64,{encoded_string}'  # Base64 string
-    }
-    # Broadcast a message to all clients when a new client connects
-    socket_io.emit('load', data)
+# @app.route('/upload', methods=['POST'])
+# def upload():
+#     data = request.get_json()
+#     image_data = data['image']
+#
+#     # Remove the prefix (data:image/png;base64,)
+#     header, encoded = image_data.split(',', 1)
+#     binary_data = base64.b64decode(encoded)
+#
+#     # Save the image to a file
+#     with open('canvas_image.png', 'wb') as f:
+#         f.write(binary_data)
+#
+#     return jsonify({'message': 'Image saved successfully!'})
+#
+#
+# def load():
+#     with open('canvas_image.png', 'rb') as f:
+#         encoded_string = base64.b64encode(f.read()).decode('utf-8')
+#
+#     data = {
+#         'message': 'Welcome to the canvas!',
+#         'image': f'data:image/png;base64,{encoded_string}'  # Base64 string
+#     }
 
 
 @socket_io.on('connect')
 def handle_connect():
     client_ip = request.remote_addr
     client_id = request.sid
-    print(f'Client connected: {client_ip}, id = {client_id}')
+    print(f'{request.sid} Connects from {client_ip}.')
+
+    # Send current board state
     for data in stroke.data:
         if data == -1:
             continue

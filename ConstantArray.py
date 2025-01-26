@@ -1,4 +1,4 @@
-class ConsArray:
+class ConstantArray:
     def __init__(self, size=1024):
         self.size = size
         self.data = [-1 for _ in range(size)]

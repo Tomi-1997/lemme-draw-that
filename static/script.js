@@ -14,7 +14,6 @@ let lastX = 0;
 let lastY = 0;
 const brushColor = '#dcdcdc';
 const brushSize = 2;
-const eraserColor = '#1e1e1e';
 const eraserSize = 40;
 let userColor = brushColor;
 let userSize = brushSize;
@@ -72,10 +71,22 @@ function onClear()
 
 
 // Clear button press
-function onClearOrigin()
+function onClearOrigin(button)
 {
     onClear();
     socket.emit('clear', {});
+    disableXForYSec(button, 3000);
+}
+
+
+// Disable a button for a certain amount of time
+function disableXForYSec(x, y)
+{
+    x.disabled = true;
+    x.opacity = 0.5;
+    setTimeout(() => {
+        x.disabled = false;
+    }, y);
 }
 
 
@@ -85,13 +96,11 @@ function onEraser(button)
     erasing = !erasing;
     if (erasing)
     {
-        userColor = eraserColor;
         userSize = eraserSize;
         button.innerText = "[E]DITOR";
     }
     else
     {
-        userColor = brushColor;
         userSize = brushSize;
         button.innerText = "[E]RASER";
     }
@@ -171,10 +180,11 @@ function onMove(e)
 
     if (erasing)
     {
-        ctx.fillStyle = userColor;
+        ctx.globalCompositeOperation = 'destination-out';
         ctx.beginPath();
         ctx.arc(x, y, userSize / 2, 0, Math.PI * 2, false); // Draw a circle
         ctx.fill();
+        ctx.globalCompositeOperation = 'source-over';
     }
 
     else
@@ -220,14 +230,16 @@ function otherDraw(data)
 
     if (data.erasing)
     {
-        ctx.fillStyle = data.userColor;
         let r = data.userSize / 2;
         let x = data.normLX * canvas.width;
         let y = data.normY * canvas.height;
 
+
+        ctx.globalCompositeOperation = 'destination-out';
         ctx.beginPath();
         ctx.arc(x, y, r, 0, Math.PI * 2, false);
         ctx.fill();
+        ctx.globalCompositeOperation = 'source-over';
         return;    
     }
 
@@ -317,43 +329,18 @@ function randomWordHardCoded()
 }
 
 
-function save()
+// Saves image locally
+function saveAsPng(button)
 {
-    const dataURL = canvas.toDataURL('image/png');
+    const link = document.createElement('a');
+    let now = new Date();
+    let hours = now.getHours();
+    let minutes = now.getMinutes();
 
-    fetch('/upload', 
-        {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ image: dataURL }),
-    })
-    .then(response => response.json())
-    .then(data => {
-        console.log('Success:', data);
-    })
-    .catch((error) => {
-        console.error('Error:', error);
-    });
-    
-}
-
-function load(data)
-{
-    const img = new Image();
-    img.src = data.image;
-
-    // Draw the image on the canvas once it has loaded
-    img.onload = function() 
-    {
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-    };
-
-    img.onerror = function() 
-    {
-    };
+    link.download = `image-at-${hours}${minutes}.png`;
+    link.href = canvas.toDataURL('image/png');
+    link.click();
+    disableXForYSec(button, 5000);
 }
 
 
@@ -430,14 +417,11 @@ function addEvents()
                 onGuess(data);
             });
 
-        socket.on('load', (data) => 
-            {
-                load(data);
-            });
 
+        // Press e, swap brush / eraser modes
         document.addEventListener('keydown', (event) => 
             {
-                if (event.key === 'e')
+                if (event.code === 'KeyE')
                     { onEraser(document.getElementById('eraser-button'));}
             });
 
