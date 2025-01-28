@@ -14,26 +14,52 @@
 
 <body>
 
-    <!-- HOST & JOIN -->
-    <div id = "hNj" class="button-row">
-        <div class="button-container">
-            <div class="info-circle">
-                <div class="info-icon">?</div>
-                <div class="info-text">Host a room and invite others.</div>
-                
+    <!-- HOST,JOIN, NUM-PAD -->
+    <div id = "starter-div">
+
+        <!-- HOST & JOIN -->
+        <div id = "hNj" class="button-row">
+            <div class="button-container">
+                <div class="info-circle">
+                    <div class="info-icon">?</div>
+                    <div class="info-text">Host a room and invite others.</div>
+                    
+                </div>
+                <button class="button" onclick="onHost(this)">HOST</button>
             </div>
-            <button class="button" onclick="onHost(this)">HOST</button>
+
+            <div class="button-container">
+                <div class="info-circle">
+                    <div class="info-icon">?</div>
+                    <div class="info-text">Join a room others created.</div>
+                    
+                </div>
+                <button class="button" onclick="onJoin(this)">JOIN</button>
+            </div>
+
+            
         </div>
 
-        <div class="button-container">
-            <div class="info-circle">
-                <div class="info-icon">?</div>
-                <div class="info-text">Join a room others created.</div>
-                
-            </div>
-            <button class="button" onclick="onJoin(this)">JOIN</button>
+
+        <!-- NUMPAD -->
+        <div id = "join-pad" class="num-pad" style="display: none;">
+            <button class="button" onclick="numPadClick(this, 0)">0</button>
+            <button class="button" onclick="numPadClick(this, 1)">1</button>
+            <button class="button" onclick="numPadClick(this, 2)">2</button>
+            <button class="button" onclick="numPadClick(this, 3)">3</button>
+            <button class="button" onclick="numPadClick(this, 4)">4</button>
+            <button class="button" onclick="numPadClick(this, 5)">5</button>
+            <button class="button" onclick="numPadClick(this, 6)">6</button>
+            <button class="button" onclick="numPadClick(this, 7)">7</button>
+            <button class="button" onclick="numPadClick(this, 8)">8</button>
+            <button class="button" onclick="numPadClick(this, 9)">9</button>        
+            <button class="button" onclick="numPadClick(this, 10)">DEL</button>
+            <button class="button" onclick="numPadClick(this, 11)">OK</button>
         </div>
+        <p id = 'num-pad-info' style="text-align: center"></p>
+
     </div>
+    
 
     <!-- BUTTONS & CANVAS -->
     <div id = "content" style="display: none;">

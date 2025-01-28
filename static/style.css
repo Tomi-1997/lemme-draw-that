@@ -111,7 +111,8 @@ canvas
 }
 
 
-.info-icon {
+.info-icon 
+{
     color: gainsboro;
     border-radius: 40%;
     padding-left: 5px;
@@ -123,12 +124,16 @@ canvas
 }
 
 
-.info-text {
+.info-text 
+{
     color: gainsboro;
     position: absolute;
+    
+    /* Rules to make the text slightly above and to the right of an icon */
     left: 30px;
     top: 50%;
     transform: translateY(-50%);
+    /**/
     font-size: 16px;
     white-space: nowrap;
     opacity: 0;
@@ -139,7 +144,8 @@ canvas
 }
 
 
-.info-circle:hover .info-text {
+.info-circle:hover .info-text 
+{
     opacity: 1;
 }
 
@@ -160,8 +166,7 @@ canvas
 p
 {
     box-shadow: 0px 0px 8px gray;
-    /* background-color: rgb(30, 30, 30); */
-    color: rgb(220, 220, 220); /* Button text color */
+    color: rgb(220, 220, 220);
     font-size: large;
 }
 
@@ -169,4 +174,13 @@ p
 {
     cursor: pointer;
     font-weight: bold;
+}
+
+
+.num-pad 
+{
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+    max-width: 300px;
 }

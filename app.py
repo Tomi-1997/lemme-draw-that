@@ -16,8 +16,7 @@ rooms = {}
 # {Ip -> Room}
 ip_to_room = {}
 
-_LETTERS = 4  ## todo change to 6 digits
-_NUMBERS = 2
+_CODE_LEN = 6
 
 
 @app.route('/')
@@ -35,7 +34,7 @@ def handle_host():
         return
 
     # todo- convert code to 6 digits
-    room_code = random_str(_LETTERS, _NUMBERS)  # todo- Check for clashes with current ids
+    room_code = random_str(_CODE_LEN) # todo- Check for clashes with current ids
     new_room = Room(user_ip, room_code)
 
     # todo- bundle a single onJoin() func
@@ -54,14 +53,19 @@ def handle_join(data):
     # todo - convert to 6 digit code
     import re
     code = data['code']
-    letters = re.findall(r'[a-z]', code)
+    not_numbers = re.findall(r'[^a-z]', code)
     numbers = re.findall(r'[0-9]', code)
     client_id = request.sid
     client_ip = request.remote_addr
 
-    # todo - send actual error code
-    if len(letters) != _LETTERS or len(numbers) != _NUMBERS:
-        socket_io.emit('room_code', {'code': '-1'}, to=client_id)
+    if len(not_numbers) > 0:
+        message = "Code contains non-numbers."
+        socket_io.emit('room_code', {'code': '-1', 'message' : message}, to=client_id)
+        return
+
+    if len(numbers) != _CODE_LEN:
+        message = "Code wrong amount of numbers."
+        socket_io.emit('room_code', {'code': '-1', 'message' : message}, to=client_id)
         return
 
     for key, val in rooms.items():

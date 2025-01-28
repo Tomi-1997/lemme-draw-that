@@ -1,11 +1,13 @@
 console.log('JS Starting')
+/* Join & Host */
+let numPadInput = '';
+let numPadInfo = null;
 
-
-/* Initialize on load */
+/* Canvas, socketIo, guesser */
 let canvas = null;
 let ctx = null;
 let socket = null;
-let info = null;
+let guessPara = null;
 
 /* Drawing vars */
 let erasing = false;
@@ -32,10 +34,11 @@ var runnable = function(fn, context, params)
 /* On HTML load - init divs */
 window.addEventListener('load', function() 
 {
+    numPadInfo = elem('num-pad-info');
     canvas = document.getElementById('canvas');
     setCanvasSize(canvas);
     ctx = canvas.getContext('2d');
-    info = this.document.getElementById('info-el');
+    guessPara = this.document.getElementById('info-el');
 
     // Generate a random color for each user
     ctx.strokeStyle = userColor; // Set the stroke color for this user
@@ -65,39 +68,42 @@ function onHost(button)
 {
     button.innerText = 'HOSTING'
     socket.emit('host');
-
 }
 
 
 //
 function onJoin(button)
 {
-    let code = prompt("Enter code:");
+    // numPadInfo.innerText = 'Please enter code, provided by the host.';
+    let numPad = elem('join-pad');
+    if (!(numPad.style.display === 'none')) return;
+    numPad.style.display = 'grid';
+    divReanimate(numPad);
+}
 
-    // If empty
-    if (!code)
+
+//
+function numPadClick(button, num)
+{
+    buttonPop(button);
+    if (num === 10) // DEL
     {
-        onJoinFail(button);
+        if (numPadInput.length === 0){ return;}
+        numPadInput = numPadInput.substring(0, numPadInput.length - 1);
+        numPadInfo.innerText = numPadInput;
         return;
     }
-
-    // Remove whitespace
-    code = code.trim();
-    if (code.length === 0)
+    if (num === 11) // OK
     {
-        onJoinFail(button);
         return;
     }
-
-    // Expected: 4 letters, both under and uppercase, and 2 numbers.
-    const codePattern = /^(?=(?:.*[a-z]){4})(?=(?:.*[0-9]){2})[a-z0-9]{6}$/; 
-    if (!codePattern.test(code))
+    if (num < 0 || num > 9) // UNEXPECTED 
     {
-        onJoinFail(button);
         return;
     }
-
-    socket.emit('join', {code});
+    if (numPadInput.length >= 6) return;
+    numPadInput = numPadInput + num;
+    numPadInfo.innerText = numPadInput;
 }
 
 
@@ -154,6 +160,7 @@ function onEraser(button)
         button.innerText = "[E]RASER";
     }
 
+    // todo replace with buttonPop()
     button.style.animation = 'none';
     button.offsetHeight;
     button.style.animation = "pop 0.2s ease forwards";
@@ -164,12 +171,12 @@ function onEraser(button)
 function onGuessOrigin()
 {
     let desiredLen = randInt(3, 5); // 3 or 4
-    info.innerText = "(\tGENERATING...\t)";
+    guessPara.innerText = "(\tGENERATING...\t)";
     getRandomWord(desiredLen).then
     (word => 
     {
         let len = word.length;
-        info.innerText = "(\tDRAW: " + word + "\t)";
+        guessPara.innerText = "(\tDRAW: " + word + "\t)";
         guessReanimate();
         socket.emit('guess', {len});
     });
@@ -184,20 +191,30 @@ function onGuess(data)
     {
         len = len + "_ ";
     }
-    info.innerText = "(\tGUESS: " + len + "\t)";
+    guessPara.innerText = "(\tGUESS: " + len + "\t)";
     guessReanimate();
 }
 
 
+// Todo, maybe delete?
 function guessReanimate()
 {
-    info.style.animation = 'none';
-    info.offsetHeight;
-    info.style.animation = "pop 1s ease forwards";
+    guessPara.style.animation = 'none';
+    guessPara.offsetHeight;
+    guessPara.style.animation = "pop 1s ease forwards";
 }
 
 
-// Guess pointer / cursor position on canvas
+// Gives a pop animation to a div
+function divReanimate(div)
+{
+    div.style.animation = 'none';
+    div.offsetHeight;
+    div.style.animation = "pop 0.5s ease forwards";
+}
+
+
+// DRAW - Guess pointer / cursor position on canvas
 function getPosition(e) 
 {
     const rect = canvas.getBoundingClientRect();
@@ -207,7 +224,7 @@ function getPosition(e)
 }
 
 
-// Begin drawing path
+// DRAW - Begin drawing path
 function onPress(e)
 {
     pos = getPosition(e);
@@ -218,7 +235,7 @@ function onPress(e)
 }
 
 
-// Actually draw on canvas, and EMIT on socket
+// DRAW - Actually draw on canvas, and EMIT on socket
 function onMove(e)
 {
     ctx.strokeStyle = userColor;
@@ -258,7 +275,7 @@ function onMove(e)
 }
 
 
-// Finished, check if others need to draw
+// DRAW - Finished, check if others need to draw
 function onUnpress(e)
 {
     drawing = false;
@@ -271,7 +288,7 @@ function onUnpress(e)
 }
 
 
-// Draw others
+// DRAW - Draw others
 function otherDraw(data)
 {
     ctx.strokeStyle = data.userColor;
@@ -301,14 +318,14 @@ function otherDraw(data)
 }
 
 
-// Draw others finished
+// DRAW - Draw others finished
 function otherDrawDone(data)
 {
 
 }
 
 
-// Random integer in range [min, max)
+// GUESSER - Random integer in range [min, max)
 function randInt(min, max) 
 {
     if (min === max) return max;
@@ -317,7 +334,7 @@ function randInt(min, max)
 }
 
 
-// Request random word by length
+// GUESSER - Request random word by length
 async function getRandomWord(len) 
 {
 
@@ -362,7 +379,7 @@ async function getRandomWord(len)
 }
 
 
-// Unable to get from API, get a random word from a list
+// GUESSER - Unable to get from API, get a random word from a list
 function randomWordHardCoded()
 {
     let words = ['Cat', 'Dog', 'Fish', 'Tree', 'Star',
@@ -378,7 +395,7 @@ function randomWordHardCoded()
 }
 
 
-// Saves image locally
+// SAVE - Saves image locally
 function saveAsPng(button)
 {
     const link = document.createElement('a');
@@ -396,7 +413,7 @@ function saveAsPng(button)
 // Listeners - mouse press, mouse move, mouse up, socker events
 function addEvents()
 {
-    canvas.addEventListener('mousedown', (e) => 
+        canvas.addEventListener('mousedown', (e) => 
         {
             drawing = true;
             onPress(e);
@@ -468,6 +485,7 @@ function addEvents()
             });
 
 
+        // Start actual content
         socket.on('room_code', (data) => 
             {
                 if (data.code === '-1') 
@@ -478,7 +496,7 @@ function addEvents()
                 currentRoom = data.code;
                 document.getElementById('room-info-el').innerText = "Room code: " + currentRoom;
                 document.getElementById('content').style.display = 'block';
-                document.getElementById('hNj').style.display = 'none';
+                document.getElementById('starter-div').style.display = 'none';
         });
 
         // Press e, swap brush / eraser modes
@@ -491,5 +509,27 @@ function addEvents()
         
 }
 
+
+// Returns element by id
+function elem(str)
+{
+    return document.getElementById(str);
+}
+
+
+// Returns element by class
+function elemC(str)
+{
+    return document.getElementsByClassName(str);
+}
+
+
+//
+function buttonPop(button)
+{
+    button.style.animation = 'none';
+    button.offsetHeight;
+    button.style.animation = "pop 0.2s ease forwards";
+}
 
 console.log('JS End')
