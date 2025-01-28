@@ -74,7 +74,6 @@ function onHost(button)
 //
 function onJoin(button)
 {
-    // numPadInfo.innerText = 'Please enter code, provided by the host.';
     let numPad = elem('join-pad');
     if (!(numPad.style.display === 'none')) return;
     numPad.style.display = 'grid';
@@ -95,6 +94,13 @@ function numPadClick(button, num)
     }
     if (num === 11) // OK
     {
+        if (numPadInput.length != 6)
+        {
+            numPadInfo.innerText = "Six digits required.";
+            return;
+        }
+        socket.emit('join', {code : numPadInput});
+        disableXForYSec(button, 5000);
         return;
     }
     if (num < 0 || num > 9) // UNEXPECTED 
@@ -104,6 +110,7 @@ function numPadClick(button, num)
     if (numPadInput.length >= 6) return;
     numPadInput = numPadInput + num;
     numPadInfo.innerText = numPadInput;
+    divReanimate(numPadInfo);
 }
 
 
@@ -490,7 +497,7 @@ function addEvents()
             {
                 if (data.code === '-1') 
                 {
-                    alert("Wrong code!");
+                    numPadInfo.innerText = data.message;
                     return;
                 }
                 currentRoom = data.code;
@@ -531,5 +538,6 @@ function buttonPop(button)
     button.offsetHeight;
     button.style.animation = "pop 0.2s ease forwards";
 }
+
 
 console.log('JS End')

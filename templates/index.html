@@ -4,7 +4,7 @@
 
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, minimum-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Lemme-draw-that</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.0/socket.io.js"></script>
     <script src="/static/script.js"></script>
@@ -12,7 +12,7 @@
 </head>
 
 
-<body>
+<body style = "width: 100%;">
 
     <!-- HOST,JOIN, NUM-PAD -->
     <div id = "starter-div">
@@ -43,7 +43,6 @@
 
         <!-- NUMPAD -->
         <div id = "join-pad" class="num-pad" style="display: none;">
-            <button class="button" onclick="numPadClick(this, 0)">0</button>
             <button class="button" onclick="numPadClick(this, 1)">1</button>
             <button class="button" onclick="numPadClick(this, 2)">2</button>
             <button class="button" onclick="numPadClick(this, 3)">3</button>
@@ -54,6 +53,7 @@
             <button class="button" onclick="numPadClick(this, 8)">8</button>
             <button class="button" onclick="numPadClick(this, 9)">9</button>        
             <button class="button" onclick="numPadClick(this, 10)">DEL</button>
+            <button class="button" onclick="numPadClick(this, 0)">0</button>
             <button class="button" onclick="numPadClick(this, 11)">OK</button>
         </div>
         <p id = 'num-pad-info' style="text-align: center"></p>
@@ -63,8 +63,10 @@
 
     <!-- BUTTONS & CANVAS -->
     <div id = "content" style="display: none;">
+
+
         <!-- Button row above canvas -->
-        <div class="button-row">
+        <div class="button-row" style="overflow-wrap: anywhere;">
 
 
             <div class="button-container">
