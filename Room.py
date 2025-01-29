@@ -19,6 +19,9 @@ class Room:
 
     def present(self, element):
         return element in self.users
+
+    def not_present(self, element):
+        return not self.present(element)
     #
     # def at(self, i):
     #     return self.data[i]

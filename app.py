@@ -2,7 +2,7 @@ from flask import Flask, render_template, request
 from flask_socketio import SocketIO, join_room, leave_room
 from ConstantArray import ConstantArray
 from Room import Room
-from my_lib import random_str
+from my_lib import random_str, get_nickname
 
 app = Flask(__name__)
 socket_io = SocketIO(app)
@@ -10,7 +10,7 @@ socket_io = SocketIO(app)
 # todo -- generalise to a number of rooms (Fixed size list to hold recent strokes)
 stroke = ConstantArray()
 
-# {Code -> Room} (code is a 6 letter string: 2 are numbers, rest are letters) --todo change to 6 digits
+# {Code -> Room}
 rooms = {}
 
 # {Ip -> Room}
@@ -34,7 +34,11 @@ def handle_host():
         return
 
     # Create room
-    room_code = random_str(_CODE_LEN)  # todo- Check for clashes with current ids
+    room_code = random_str(_CODE_LEN, rooms)
+    if room_code == -1:
+        message = "Error creating room"
+        socket_io.emit('room_code', {'code': '-1', 'message': message}, to=client_id)
+        return
     new_room = Room(user_ip, room_code)
 
     # Add host to room {todo add room.admin?}
@@ -103,7 +107,7 @@ def handle_disconnect():
     client_id = request.sid
     print(f'{client_id} Disconnects from {client_ip}.')
 
-    # todo - bundle to onJoin() func
+    # todo - bundle to onLeave() func
     if client_ip in ip_to_room:
         val = ip_to_room[client_ip]
         key = val.code
@@ -114,7 +118,8 @@ def add_x_to_room(x, room_key, room_val, client_id):
     join_room(room_key)
     ip_to_room[x] = room_val
     room_val.add(x)
-    print(f'{x} joins room {room_key}!')
+    nickname = get_nickname(room_val)
+    print(f'{x} joins room {room_key} as {nickname}!')
     print(rooms)
     socket_io.emit('room_code', {'code': room_key}, to=client_id)
 
@@ -157,8 +162,6 @@ def handle_guess(data):
         return
     print(f'{ip} Sends guess.')  # todo - give more info (which room, etc)
     socket_io.emit('guess', data, include_self=False, room=ip_to_room[ip].code)
-
-
 
 
 if __name__ == '__main__':
