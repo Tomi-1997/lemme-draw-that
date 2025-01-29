@@ -106,12 +106,15 @@ def handle_disconnect():
     client_ip = request.remote_addr
     client_id = request.sid
     print(f'{client_id} Disconnects from {client_ip}.')
+    try_leave(client_ip, client_id)
 
-    # todo - bundle to onLeave() func
-    if client_ip in ip_to_room:
-        val = ip_to_room[client_ip]
-        key = val.code
-        rm_x_from_room(x=client_ip, room_key=key, room_val=val, client_id=client_id)
+
+@socket_io.on('leave')
+def handle_leave():
+    client_ip = request.remote_addr
+    client_id = request.sid
+    print(f'{client_id} Leaves from {client_ip}.')
+    try_leave(client_ip, client_id)
 
 
 def add_x_to_room(x, room_key, room_val, client_id):
@@ -134,6 +137,13 @@ def rm_x_from_room(x, room_key, room_val, client_id):
         del rooms[room_key]
         print(f'{room_key} is empty, deleting.')
     print(rooms)
+
+
+def try_leave(client_ip, client_id):
+    if client_ip in ip_to_room:
+        val = ip_to_room[client_ip]
+        key = val.code
+        rm_x_from_room(x=client_ip, room_key=key, room_val=val, client_id=client_id)
 
 
 @socket_io.on('draw')

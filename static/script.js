@@ -66,8 +66,9 @@ function setCanvasSize(canvas)
 //
 function onHost(button)
 {
-    button.innerText = 'HOSTING'
+    // button.innerText = 'HOSTING' todo find animation 
     socket.emit('host');
+    disableXForYSec(button, 10000);
 }
 
 
@@ -417,6 +418,16 @@ function saveAsPng(button)
 }
 
 
+// LEAVE - Leaves room
+function leaveRoom(button)
+{
+    elem('content').style.display = 'none';
+    elem('starter-div').style.display = 'block';
+    elem('room-info-el').innerText = '\n';
+    socket.emit('leave');
+}
+
+
 // Listeners - mouse press, mouse move, mouse up, socker events
 function addEvents()
 {
@@ -500,10 +511,11 @@ function addEvents()
                     numPadInfo.innerText = data.message;
                     return;
                 }
+
                 currentRoom = data.code;
-                document.getElementById('room-info-el').innerText = "Room code: " + currentRoom;
-                document.getElementById('content').style.display = 'block';
-                document.getElementById('starter-div').style.display = 'none';
+                elem('room-info-el').innerText = "Room code: " + currentRoom;
+                elem('content').style.display = 'block';
+                elem('starter-div').style.display = 'none';
         });
 
         // Press e, swap brush / eraser modes
