@@ -1,13 +1,18 @@
 console.log('JS Starting')
+
 /* Join & Host */
 let numPadInput = '';
 let numPadInfo = null;
 
-/* Canvas, socketIo, guesser */
+/* Canvas, socket, guesser */
 let canvas = null;
+let otherCanvas = null;
+let canvasActive = false;
+let intervalId = null;
 let ctx = null;
 let socket = null;
 let guessPara = null;
+let myNickname = null;
 
 /* Drawing vars */
 let erasing = false;
@@ -15,10 +20,11 @@ let drawing = false;
 let lastX = 0;
 let lastY = 0;
 const brushColor = '#dcdcdc';
-const brushSize = 2;
+const brushSize = 1;
 const eraserSize = 40;
 let userColor = brushColor;
 let userSize = brushSize;
+let eraserRad = 0;
 
 
 /* Work queue, to let other clients paint on screen */
@@ -36,8 +42,11 @@ window.addEventListener('load', function()
 {
     numPadInfo = elem('num-pad-info');
     canvas = document.getElementById('canvas');
+    otherCanvas = document.createElement('canvas');
     setCanvasSize(canvas);
+
     ctx = canvas.getContext('2d');
+    otherCtx = otherCanvas.getContext('2d');
     guessPara = this.document.getElementById('info-el');
 
     // Generate a random color for each user
@@ -52,14 +61,28 @@ window.addEventListener('load', function()
 function setCanvasSize(canvas)
 {
     if (window.innerWidth <= 600) 
-        {
+    {
         canvas.width = 300;
         canvas.height = 200;
+        
     } else 
     {
         canvas.width = 800;
         canvas.height = 500;
     }
+    otherCanvas.width = canvas.width;
+    otherCanvas.height = canvas.height;
+    eraserRad = canvas.width / 32;
+}
+
+
+// Copies otherCanvas into Canvas
+// Copies canvas as seen from server locally every X ms
+// not exactly merges then
+function mergeCanvases()
+{
+    ctx.drawImage(otherCanvas, 0, 0);
+    otherCtx.clearRect(0, 0, canvas.width, canvas.height);
 }
 
 
@@ -127,6 +150,7 @@ function onJoinFail(button)
 function onClear()
 {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
+    otherCtx.clearRect(0, 0, canvas.width, canvas.height);
     canvas.style.animation = 'none'; // Remove the animation
     canvas.offsetHeight; // Trigger reflow
     canvas.style.animation = ''; // Reapply the 
@@ -176,7 +200,7 @@ function onEraser(button)
 
 
 // Guesser button press
-function onGuessOrigin()
+function onGuessOrigin(button)
 {
     let desiredLen = randInt(3, 5); // 3 or 4
     guessPara.innerText = "(\tGENERATING...\t)";
@@ -188,6 +212,7 @@ function onGuessOrigin()
         guessReanimate();
         socket.emit('guess', {len});
     });
+    disableXForYSec(button, 1000);
 }
 
 
@@ -256,7 +281,7 @@ function onMove(e)
     {
         ctx.globalCompositeOperation = 'destination-out';
         ctx.beginPath();
-        ctx.arc(x, y, userSize / 2, 0, Math.PI * 2, false); // Draw a circle
+        ctx.arc(x, y, eraserRad, 0, Math.PI * 2, false);
         ctx.fill();
         ctx.globalCompositeOperation = 'source-over';
     }
@@ -299,30 +324,35 @@ function onUnpress(e)
 // DRAW - Draw others
 function otherDraw(data)
 {
-    ctx.strokeStyle = data.userColor;
-    ctx.lineWidth = data.userSize;
-
+    // Erasing, push work to queue
     if (data.erasing)
     {
-        let r = data.userSize / 2;
-        let x = data.normLX * canvas.width;
-        let y = data.normY * canvas.height;
-
-
-        ctx.globalCompositeOperation = 'destination-out';
-        ctx.beginPath();
-        ctx.arc(x, y, r, 0, Math.PI * 2, false);
-        ctx.fill();
-        ctx.globalCompositeOperation = 'source-over';
+        var otherFunc = runnable(otherErase, this, [data]);
+        workQueue.push(otherFunc);
         return;    
     }
 
+    // Drawing, can draw on the hidden canvas at the same time
+    otherCtx.strokeStyle = data.userColor;
+    otherCtx.lineWidth = data.userSize;
+    otherCtx.beginPath();
+    otherCtx.moveTo(data.normLX * canvas.width, data.normLY * canvas.height);
+    otherCtx.lineTo(data.normX * canvas.width, data.normY * canvas.height);
+    otherCtx.stroke();
+    otherCtx.closePath();
+}
 
+
+function otherErase(data)
+{
+    let x = data.normLX * canvas.width;
+    let y = data.normY * canvas.height;
+    ctx.globalCompositeOperation = 'destination-out';
     ctx.beginPath();
-    ctx.moveTo(data.normLX * canvas.width, data.normLY * canvas.height);
-    ctx.lineTo(data.normX * canvas.width, data.normY * canvas.height);
-    ctx.stroke();
-    ctx.closePath();
+    ctx.arc(x, y, eraserRad, 0, Math.PI * 2, false);
+    ctx.fill();
+    ctx.globalCompositeOperation = 'source-over';
+    return;    
 }
 
 
@@ -421,13 +451,45 @@ function saveAsPng(button)
 // LEAVE - Leaves room
 function leaveRoom(button)
 {
+    // Canvas & Info
     elem('content').style.display = 'none';
+    elem('content-info').style.display = 'none';
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    canvasActive = false;
+    clearInterval(intervalId);
+
+    // Host & Join 
     elem('starter-div').style.display = 'block';
-    elem('room-info-el').innerText = '\n';
+    elem('room-info-el').innerText = '';
+
+    // Notify others
     socket.emit('leave');
 }
 
 
+
+// HOST, OTHERS JOIN, OTHERS LEAVE
+function initializeUserList(userList)
+{
+    let div = '<div> [User List]\n';
+    userList.forEach((val) => 
+        {
+            item = val + '</div>\n';
+            if (val === myNickname)
+            {
+                div = div + '  <div style="font-weight:bold;">' + item; 
+            }
+            else
+            {
+                div = div + '  <div>' + item;
+            }
+        });
+    div = div + '</div>'
+    elem('user-list').innerHTML = div;
+}
+
+
+// SOCKET EVENTS
 // Listeners - mouse press, mouse move, mouse up, socker events
 function addEvents()
 {
@@ -477,12 +539,14 @@ function addEvents()
         // Listen for drawing data from other clients
         socket.on('draw', (data) => 
         {
-            var otherFunc = runnable(otherDraw, this, [data]);
-            workQueue.push(otherFunc);
+            // Draw on hidden canvas & Queue deletion
+            otherDraw(data);
+
+            // Queue for deletion
             while (!drawing && workQueue.length > 0)
-            {
-                (workQueue.pop())();
-            }
+                {
+                    (workQueue.pop())();
+                }
         });
 
         // Listen for drawing data from other clients
@@ -506,16 +570,42 @@ function addEvents()
         // Start actual content
         socket.on('room_code', (data) => 
             {
+
+                // Error
                 if (data.code === '-1') 
                 {
                     numPadInfo.innerText = data.message;
                     return;
                 }
 
+
+                // Get code + my nick
                 currentRoom = data.code;
+                myNickname = data.my_nick;
+                
+                // Get users
+                let userList = data.users;
+                initializeUserList(userList);
+
+                // Display divs
                 elem('room-info-el').innerText = "Room code: " + currentRoom;
-                elem('content').style.display = 'block';
+
+                // Host & Join hide
                 elem('starter-div').style.display = 'none';
+
+                // Canvas + info show
+                elem('content').style.display = 'block';
+                elem('content-info').style.display = 'block';
+                canvasActive = true;
+                intervalId = setInterval(mergeCanvases, 20);
+        });
+
+        // Other join / left
+        socket.on('room_update', (data) =>
+        {
+            let userList = data.users;
+            let myIndex = data.my_index;
+            initializeUserList(userList, myIndex);
         });
 
         // Press e, swap brush / eraser modes
@@ -524,8 +614,6 @@ function addEvents()
                 if (event.code === 'KeyE')
                     { onEraser(document.getElementById('eraser-button'));}
             });
-
-        
 }
 
 

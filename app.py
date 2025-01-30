@@ -2,6 +2,7 @@ from flask import Flask, render_template, request
 from flask_socketio import SocketIO, join_room, leave_room
 from ConstantArray import ConstantArray
 from Room import Room
+from User import User
 from my_lib import random_str, get_nickname
 
 app = Flask(__name__)
@@ -39,7 +40,7 @@ def handle_host():
         message = "Error creating room"
         socket_io.emit('room_code', {'code': '-1', 'message': message}, to=client_id)
         return
-    new_room = Room(user_ip, room_code)
+    new_room = Room(room_code)
 
     # Add host to room {todo add room.admin?}
     rooms[room_code] = new_room
@@ -71,7 +72,7 @@ def handle_join(data):
     for key, val in rooms.items():
 
         found_match = (key == code)  # There is a room with requested code
-        in_room = val.present(client_ip)  # Client already inside
+        in_room = val.ip_present(client_ip)  # Client already inside
         if found_match and not in_room:
 
             # Add
@@ -88,21 +89,24 @@ def handle_connect():
     client_id = request.sid
     print(f'{client_id} Connects from {client_ip}.')
 
-    # todo - bundle to onJoin() func
     if client_ip in ip_to_room:
         val = ip_to_room[client_ip]
         key = val.code
-        add_x_to_room(x=client_ip, room_key=key, room_val=val, client_id=client_id)
+        join_room(key)
+        print(f'{client_ip} joins room {key} from another browser!')
+        print(rooms)
 
-    # # Send current board state
-    # for data in stroke.data:
-    #     if data == -1:
-    #         continue
-    #     socket_io.emit('draw', data, to=client_id)
+        data = {'code': key,
+                'users': val.user_nicks(),
+                'my_nick': val.find_nick(client_ip),
+                }
+
+        # Return to sender
+        socket_io.emit('room_code', data, to=client_id)
 
 
 @socket_io.on('disconnect')
-def handle_disconnect():
+def handle_disconnect():  #todo user.browserConnected -= 1
     client_ip = request.remote_addr
     client_id = request.sid
     print(f'{client_id} Disconnects from {client_ip}.')
@@ -110,7 +114,7 @@ def handle_disconnect():
 
 
 @socket_io.on('leave')
-def handle_leave():
+def handle_leave():  #todo user.browserConnected -= 1
     client_ip = request.remote_addr
     client_id = request.sid
     print(f'{client_id} Leaves from {client_ip}.')
@@ -120,11 +124,21 @@ def handle_leave():
 def add_x_to_room(x, room_key, room_val, client_id):
     join_room(room_key)
     ip_to_room[x] = room_val
-    room_val.add(x)
     nickname = get_nickname(room_val)
+    user = User(x, nickname)
+    room_val.add(user)
     print(f'{x} joins room {room_key} as {nickname}!')
     print(rooms)
-    socket_io.emit('room_code', {'code': room_key}, to=client_id)
+
+    data = {'code': room_key,
+            'users': room_val.user_nicks(),
+            'my_nick': nickname,
+            }
+
+    # Return to sender
+    socket_io.emit('room_code', data, to=client_id)
+    # Notify others
+    socket_io.emit('room_update', {'users': room_val.user_nicks()}, room=room_key, include_self=False)
 
 
 def rm_x_from_room(x, room_key, room_val, client_id):
@@ -140,6 +154,8 @@ def rm_x_from_room(x, room_key, room_val, client_id):
 
 
 def try_leave(client_ip, client_id):
+    # todo log user.timesConnect for each browser connect
+    # todo, if user leaves from another browser, room could be deleted
     if client_ip in ip_to_room:
         val = ip_to_room[client_ip]
         key = val.code

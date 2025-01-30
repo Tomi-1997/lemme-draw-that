@@ -96,7 +96,7 @@
                     <div class="info-text">Get a random word, others get the length.</div>
                     
                 </div>
-                <button class="button" onclick="onGuessOrigin()">GUESSER</button>
+                <button class="button" onclick="onGuessOrigin(this)">GUESSER</button>
             </div>
 
 
@@ -128,12 +128,18 @@
         </div>
     </div>
 
-    <!-- wbr = empty char to keep ratio size the same -->
-    <p id="room-info-el"><wbr /></p>
+    <div id ='content-info' style="text-align: center;">
+        <!-- wbr = empty char to keep ratio size the same -->
+        <p id="room-info-el"></p>
 
-    <!-- wbr = empty char to keep ratio size the same -->
-    <p id="info-el" class = "removeable"
-    onclick="(() => this.innerText='\n')()"><wbr /></p>
+        <!-- wbr = empty char to keep ratio size the same -->
+        <p id="info-el" class = "removeable"
+        onclick="(() => this.innerText='')()"></p>
+
+        <div id = 'user-list'>
+        </div>
+    </div>
+
 
 </body>
 

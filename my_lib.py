@@ -34,7 +34,11 @@ def get_nickname(room):
     max_attempts = 10
     nickname = 'Unknown Animal'
     for _ in range(max_attempts):
-        nickname = random.choice(adj) + ' ' + random.choice(ani)
-        if room.not_present(nickname):
+        adj = random.choice(adj)
+        ani = random.choice(ani)
+        adj = adj.capitalize()
+        ani = ani.capitalize()
+        nickname = adj + ' ' + ani
+        if room.ip_not_present(nickname):
             return nickname
-    print(nickname)
+    return nickname
