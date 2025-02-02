@@ -204,7 +204,7 @@ function onEraser(button)
 // Guesser button press
 function onGuessOrigin(button)
 {
-    let desiredLen = randInt(3, 5); // 3 or 4
+    let desiredLen = randInt(3, 7); // 3, 4, 5, 6
     guessPara.innerText = "(\tGENERATING...\t)";
     getRandomWord(desiredLen).then
     (word => 
