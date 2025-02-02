@@ -510,7 +510,10 @@ function initializeUserList(userList)
             }
         });
     div = div + '</div>'
-    elem('user-list').innerHTML = div;
+    
+    let ul = elem('user-list');
+    ul.innerHTML = div;
+    ul.style.color = 'gainsboro';
 }
 
 
@@ -620,7 +623,11 @@ function addEvents()
                 elem('starter-div').style.display = 'none';
 
                 // Canvas + info show
-                elem('content').style.display = 'block';
+                elem('content').style.display = 'flex';
+                if (canvas.width <= 300)
+                {
+                    elem('content').style.display = 'block';
+                }
                 elem('content-info').style.display = 'block';
                 canvasActive = true;
                 intervalId = setInterval(mergeCanvases, 20);

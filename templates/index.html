@@ -64,6 +64,10 @@
     <!-- BUTTONS & CANVAS -->
     <div id = "content" style="display: none;">
 
+        <!-- Canvas -->
+        <div id ="canvas-holder" >
+            <canvas id="canvas" width="300" height="300"></canvas>
+        </div>
 
         <!-- Button row -->
         <div class="button-row" style="overflow-wrap: anywhere;">
@@ -75,7 +79,7 @@
                     <div class="info-text">Reset the canvas to all.</div>
                     
                 </div>
-                <button class="button" onclick="onClearOrigin(this)">CLEAR</button>
+                <button class="button c-button" onclick="onClearOrigin(this)">CLEAR</button>
             </div>
 
 
@@ -85,7 +89,7 @@
                     <div class="info-text">Switch brush modes locally.</div>
                     
                 </div>
-                <button id="eraser-button" class="button" 
+                <button id="eraser-button" class="button c-button" 
                 onclick="onEraser(this)">[E]RASER</button>
             </div>
 
@@ -96,7 +100,7 @@
                     <div class="info-text">Get a random word, others get the length.</div>
                     
                 </div>
-                <button class="button" onclick="onGuessOrigin(this)">GUESSER</button>
+                <button class="button c-button" onclick="onGuessOrigin(this)">GUESSER</button>
             </div>
 
 
@@ -106,7 +110,7 @@
                     <div class="info-text">Save current canvas locally.</div>
                     
                 </div>
-                <button class="button" onclick="saveAsPng(this)">SAVE</button>
+                <button class="button c-button" onclick="saveAsPng(this)">SAVE</button>
             </div>
 
 
@@ -116,7 +120,7 @@
                     <div class="info-text">Leave room, close if empty.</div>
                     
                 </div>
-                <button class="button" onclick="leaveRoom(this)">LEAVE</button>
+                <button class="button c-button" onclick="leaveRoom(this)">LEAVE</button>
             </div>
 
 
@@ -126,16 +130,13 @@
                     <div class="info-text">Disable or enable new users from joining.</div>
                     
                 </div>
-                <button id="lock-but" class="button" onclick="onLockOrigin(this)">LOCK</button>
+                <button id="lock-but" class="button c-button" onclick="onLockOrigin(this)">LOCK</button>
             </div>
             
         </div>
 
+
         
-        <!-- Canvas -->
-        <div id ="canvas-holder" >
-            <canvas id="canvas" width="300" height="300"></canvas>
-        </div>
     </div>
 
 

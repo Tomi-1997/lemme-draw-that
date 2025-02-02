@@ -4,55 +4,85 @@ html, body
     background-size: cover;
     background-repeat: no-repeat;
     background-attachment: fixed;
-    /* width: 100%;
-    height: 100%; */
-    /* overflow: hidden; */
 }
 
 
 body
 {
     font-family:'Courier New', Courier, monospace;
+
     display: flex;
     flex-direction: column;
     justify-content: center;
     align-items: center;
+
+    overflow-x: hidden;
     margin-top: 5%;
     cursor: default;
 }
+
+
 
 
 @media (max-width: 800px) 
 {
     body 
     {
-      flex-direction: column;
+      /* flex-direction: column; */
       margin-left: 10%;
       margin-top: 10%;
+    }
+
+    .content
+    {
+        flex-direction: column;
+        align-items: center;
+    }
+
+    .button-row
+    {
+        margin-left: 0;
+        margin-top: 20px;
     }
 }
 
 
 .content
 {
-    position: relative;
+    /* position: relative; */
+    /* right: 300px; */
+    /* display: flex;
+    flex-direction: row; */
 }
 
 
 .canvas-holder
 {
-    margin-left: auto;
+    /* margin-left: auto; */
     background-color: #1a1a1a;
-    text-align: center;
-    display: flex; /* Use flexbox for centering content */
-    align-items: center; /* Center content vertically */
-    justify-content: center; /* Center content horizontally */
+    /* text-align: center;
+    display: flex;
+    align-items: center;
+    justify-content: center; */
 }
 
 
+.button-row 
+{
+    gap: 20px; /* Space between buttons */
+    margin-bottom: 20px; /* Space between buttons and the div */
+
+    text-align: center;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    position: relative;
+    flex-direction: column;
+}
+
 canvas 
 {
-    border: 1px solid black;
+    border: 1px solid darkgray;
     border-radius: 10px;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
     animation: pop 0.4s ease forwards;
@@ -80,18 +110,7 @@ canvas
 }
 
 
-.button-row 
-{
-    gap: 20px; /* Space between buttons */
-    margin-bottom: 20px; /* Space between buttons and the div */
-    
-    text-align: center;
-    display: flex;
-    flex-direction: row;
-    justify-content: center;
-    align-items: center;
-    position: relative;
-}
+
 
 @media (max-width: 800px) 
 {
@@ -124,6 +143,12 @@ canvas
     font-size: large;
 }
 
+.c-button
+{
+    width: 140px;
+    margin-left: 20px;
+}
+
 
 .button:hover
 {
@@ -141,8 +166,8 @@ canvas
 
 .info-circle {
     position: absolute;
-    top: -30px; /* Adjust this value to move the circle higher or lower */
-    right: -15px; /* Align to the right */
+    top: -20px; /* Adjust this value to move the circle higher or lower */
+    right: -25px; /* Align to the right */
     text-align: center;
     display: inline-block;
     opacity: 0.25;
