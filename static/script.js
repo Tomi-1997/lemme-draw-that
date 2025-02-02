@@ -3,6 +3,7 @@ console.log('JS Starting')
 /* Join & Host */
 let numPadInput = '';
 let numPadInfo = null;
+let roomLocked = false;
 
 /* Canvas, socket, guesser */
 let canvas = null;
@@ -121,6 +122,7 @@ function numPadClick(button, num)
         if (numPadInput.length != 6)
         {
             numPadInfo.innerText = "Six digits required.";
+            disableXForYSec(button, 1000);
             return;
         }
         socket.emit('join', {code : numPadInput});
@@ -467,6 +469,29 @@ function leaveRoom(button)
 }
 
 
+// LOCK - reques to lock or unlock room 
+function onLockOrigin(button)
+{
+    socket.emit('lock');
+}
+
+// LOCK - handle request from others
+function onLock(data)
+{
+    roomLocked = data.lock;
+    button = elem('lock-but');
+    if (roomLocked)
+    {
+        button.innerText = 'UNLOCK';
+    }
+    else
+    {
+        button.innerText = 'LOCK';
+    }
+    divReanimate(button);
+    disableXForYSec(button, 5000);
+}
+
 
 // HOST, OTHERS JOIN, OTHERS LEAVE
 function initializeUserList(userList)
@@ -575,6 +600,7 @@ function addEvents()
                 if (data.code === '-1') 
                 {
                     numPadInfo.innerText = data.message;
+                    divReanimate(numPadInfo);
                     return;
                 }
 
@@ -607,6 +633,12 @@ function addEvents()
             let myIndex = data.my_index;
             initializeUserList(userList, myIndex);
         });
+
+        // Lock request
+        socket.on('lock', (data) =>
+            {
+                onLock(data);
+            });
 
         // Press e, swap brush / eraser modes
         document.addEventListener('keydown', (event) => 

@@ -14,7 +14,7 @@
 
 <body style = "width: 100%;">
 
-    <!-- HOST,JOIN, NUM-PAD -->
+    <!-- HOST & JOIN & NUM-PAD -->
     <div id = "starter-div">
 
         <!-- HOST & JOIN -->
@@ -65,7 +65,7 @@
     <div id = "content" style="display: none;">
 
 
-        <!-- Button row above canvas -->
+        <!-- Button row -->
         <div class="button-row" style="overflow-wrap: anywhere;">
 
 
@@ -118,24 +118,38 @@
                 </div>
                 <button class="button" onclick="leaveRoom(this)">LEAVE</button>
             </div>
+
+
+            <div class="button-container">
+                <div class="info-circle">
+                    <div class="info-icon">?</div>
+                    <div class="info-text">Disable or enable new users from joining.</div>
+                    
+                </div>
+                <button id="lock-but" class="button" onclick="onLockOrigin(this)">LOCK</button>
+            </div>
             
         </div>
 
         
-        <!-- Canvas and text above it -->
+        <!-- Canvas -->
         <div id ="canvas-holder" >
             <canvas id="canvas" width="300" height="300"></canvas>
         </div>
     </div>
 
+
+    <!-- ROOM KEY & GUESSER & USER LIST -->
     <div id ='content-info' style="text-align: center;">
-        <!-- wbr = empty char to keep ratio size the same -->
+
+        <!-- key -->
         <p id="room-info-el"></p>
 
-        <!-- wbr = empty char to keep ratio size the same -->
+        <!-- guesser -->
         <p id="info-el" class = "removeable"
         onclick="(() => this.innerText='')()"></p>
 
+        <!-- user list -->
         <div id = 'user-list'>
         </div>
     </div>

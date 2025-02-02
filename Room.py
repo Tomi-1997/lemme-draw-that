@@ -11,6 +11,7 @@ class Room:
         self.users = []
         self.code = room_code
         self.board_state = ConstantArray()
+        self.is_locked = False
 
     def is_empty(self):
         return len(self.users) == 0
@@ -48,6 +49,12 @@ class Room:
 
     def len(self):
         return len(self.users)
+
+    def locked(self):
+        return self.is_locked
+
+    def lock_unlock(self):
+        self.is_locked = not self.is_locked
 
     def user_nicks(self):
         ans = []

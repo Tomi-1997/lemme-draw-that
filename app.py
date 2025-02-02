@@ -12,7 +12,7 @@ rooms = {}
 # {  ID: Room}
 id_to_room = {}
 # {Constants}
-_MAX_ROOM = 16  # Max rooms overall
+_MAX_ROOM = 8  # Max rooms overall
 _MAX_USERS = 8  # Max users for one room
 _ROOM_CODE_LEN = 6
 
@@ -24,15 +24,21 @@ def index():
 
 @socket_io.on('host')
 def handle_host():
-
     # User clicked on host
-    # 1. Check if already inside a room
-    # 2. Generate room code, validate
-    # 3. Create room
-    # 4. Add to room, send data
+    # ☻ Check if already inside a room
+    # ☻ Check if there are rooms available
+    # ☻ Generate room code, validate
+    # ☻ Create room
+    # ☻ Add to room, send data
 
     client_id = request.sid
     if client_id in id_to_room:
+        return
+
+    # Check for room limit
+    if len(rooms) >= _MAX_ROOM:
+        message = "Room capacity reached"
+        socket_io.emit('room_code', {'code': '-1', 'message': message}, to=client_id)
         return
 
     # Create room
@@ -50,11 +56,11 @@ def handle_host():
 
 @socket_io.on('join')
 def handle_join(data):
-
     # User clicked on JOIN
-    # 1. Validate user input
-    # 2. Search for room with same code
-    # 3. Add to room, send data
+    # ☻ Validate user input
+    # ☻ Search for room with same code
+    # ☻ Check room capacity
+    # ☻ Add to room, send data
 
     import re
     code = data['code']
@@ -74,12 +80,24 @@ def handle_join(data):
 
     for key, val in rooms.items():
 
-        found_match = (key == code)  # There is a room with requested code
-        in_room = val.id_present(client_id)  # Client already inside
-        if found_match and not in_room:
-            # Add
-            add_id_to_room(uid=client_id, room_key=key, room_val=val)
+        if key != code:  # Different room key
+            continue
+        if val.id_present(client_id):  # Room has same ID inside, somehow
+            continue
+
+        if val.locked():  # Room locked
+            message = "Room is locked."
+            socket_io.emit('room_code', {'code': '-1', 'message': message}, to=client_id)
             return
+
+        if val.len() >= _MAX_USERS:  # Room reached user capacity
+            message = "Room is full."
+            socket_io.emit('room_code', {'code': '-1', 'message': message}, to=client_id)
+            return
+
+        # Add user to room
+        add_id_to_room(uid=client_id, room_key=key, room_val=val)
+        return
 
     message = "No such room."
     socket_io.emit('room_code', {'code': '-1', 'message': message}, to=client_id)
@@ -87,7 +105,6 @@ def handle_join(data):
 
 @socket_io.on('connect')
 def handle_connect():
-
     # User connects to app
     # Wait for further input (host \ join)
 
@@ -98,7 +115,6 @@ def handle_connect():
 
 @socket_io.on('disconnect')
 def handle_disconnect():
-
     # User disconnected
     # 1. Check if inside any room
     # 2. tryLeave() which checks if inside a room and ejects him
@@ -110,7 +126,6 @@ def handle_disconnect():
 
 @socket_io.on('leave')
 def handle_leave():
-
     # User pressed 'LEAVE'
     # 1. Check if inside any room
     # 2. tryLeave() which checks if inside a room and ejects him
@@ -161,7 +176,6 @@ def rm_id_from_room(uid, room_key, room_val):
 
 
 def try_leave(client_id):
-
     # User disconnects, or presses 'LEAVE'
     # 1. Check if inside any room
     # 2. onLeave()
@@ -201,6 +215,17 @@ def handle_guess(data):
     room = id_to_room[client_id].code
     print(f'{client_id} Sends a guess in room {room}.')
     socket_io.emit('guess', data, include_self=False, room=room)
+
+
+@socket_io.on('lock')
+def handle_guess():
+    client_id = request.sid
+    if client_id not in id_to_room:
+        return
+    room = id_to_room[client_id].code
+    print(f'{client_id} Sends a lock \\ unlock request in room {room}.')
+    rooms[room].lock_unlock()
+    socket_io.emit('lock', {'lock': rooms[room].locked()}, include_self=True, room=room)
 
 
 if __name__ == '__main__':
