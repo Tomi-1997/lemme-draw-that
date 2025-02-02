@@ -1,6 +1,5 @@
 from flask import Flask, render_template, request
 from flask_socketio import SocketIO, join_room, leave_room
-from ConstantArray import ConstantArray
 from Room import Room
 from User import User
 from my_lib import random_str, get_nickname
@@ -8,16 +7,14 @@ from my_lib import random_str, get_nickname
 app = Flask(__name__)
 socket_io = SocketIO(app)
 
-# todo -- generalise to a number of rooms (Fixed size list to hold recent strokes)
-stroke = ConstantArray()
-
-# {Code -> Room}
+# {Code: Room}
 rooms = {}
-
-# {Ip -> Room}
-ip_to_room = {}
-
-_CODE_LEN = 6
+# {  ID: Room}
+id_to_room = {}
+# {Constants}
+_MAX_ROOM = 16  # Max rooms overall
+_MAX_USERS = 8  # Max users for one room
+_ROOM_CODE_LEN = 6
 
 
 @app.route('/')
@@ -27,29 +24,37 @@ def index():
 
 @socket_io.on('host')
 def handle_host():
-    user_ip = request.remote_addr
-    client_id = request.sid
 
-    # Ignore, will be sent code
-    if user_ip in ip_to_room:
+    # User clicked on host
+    # 1. Check if already inside a room
+    # 2. Generate room code, validate
+    # 3. Create room
+    # 4. Add to room, send data
+
+    client_id = request.sid
+    if client_id in id_to_room:
         return
 
     # Create room
-    room_code = random_str(_CODE_LEN, rooms)
+    room_code = random_str(_ROOM_CODE_LEN, rooms)
     if room_code == -1:
         message = "Error creating room"
         socket_io.emit('room_code', {'code': '-1', 'message': message}, to=client_id)
         return
-    new_room = Room(room_code)
 
-    # Add host to room {todo add room.admin?}
+    new_room = Room(room_code)
     rooms[room_code] = new_room
-    print(f'{user_ip} hosts!')
-    add_x_to_room(x=user_ip, room_key=room_code, room_val=new_room, client_id=client_id)
+    print(f'{client_id} hosts!')
+    add_id_to_room(uid=client_id, room_key=room_code, room_val=new_room)
 
 
 @socket_io.on('join')
 def handle_join(data):
+
+    # User clicked on JOIN
+    # 1. Validate user input
+    # 2. Search for room with same code
+    # 3. Add to room, send data
 
     import re
     code = data['code']
@@ -57,14 +62,12 @@ def handle_join(data):
     numbers = re.findall(r'[0-9]', code)
 
     client_id = request.sid
-    client_ip = request.remote_addr
-
     if len(not_numbers) > 0:
         message = "Non-numbers in code."
         socket_io.emit('room_code', {'code': '-1', 'message': message}, to=client_id)
         return
 
-    if len(numbers) != _CODE_LEN:
+    if len(numbers) != _ROOM_CODE_LEN:
         message = "Six digits required."
         socket_io.emit('room_code', {'code': '-1', 'message': message}, to=client_id)
         return
@@ -72,11 +75,10 @@ def handle_join(data):
     for key, val in rooms.items():
 
         found_match = (key == code)  # There is a room with requested code
-        in_room = val.ip_present(client_ip)  # Client already inside
+        in_room = val.id_present(client_id)  # Client already inside
         if found_match and not in_room:
-
             # Add
-            add_x_to_room(x=client_ip, room_key=key, room_val=val, client_id=client_id)
+            add_id_to_room(uid=client_id, room_key=key, room_val=val)
             return
 
     message = "No such room."
@@ -85,49 +87,46 @@ def handle_join(data):
 
 @socket_io.on('connect')
 def handle_connect():
+
+    # User connects to app
+    # Wait for further input (host \ join)
+
     client_ip = request.remote_addr
-    client_id = request.sid
-    print(f'{client_id} Connects from {client_ip}.')
-
-    if client_ip in ip_to_room:
-        val = ip_to_room[client_ip]
-        key = val.code
-        join_room(key)
-        print(f'{client_ip} joins room {key} from another browser!')
-        print(rooms)
-
-        data = {'code': key,
-                'users': val.user_nicks(),
-                'my_nick': val.find_nick(client_ip),
-                }
-
-        # Return to sender
-        socket_io.emit('room_code', data, to=client_id)
+    uid = request.sid
+    print(f'{uid} Connects from {client_ip}.')
 
 
 @socket_io.on('disconnect')
-def handle_disconnect():  #todo user.browserConnected -= 1
-    client_ip = request.remote_addr
+def handle_disconnect():
+
+    # User disconnected
+    # 1. Check if inside any room
+    # 2. tryLeave() which checks if inside a room and ejects him
+
     client_id = request.sid
-    print(f'{client_id} Disconnects from {client_ip}.')
-    try_leave(client_ip, client_id)
+    print(f'{client_id} DCs.')
+    try_leave(client_id)
 
 
 @socket_io.on('leave')
-def handle_leave():  #todo user.browserConnected -= 1
-    client_ip = request.remote_addr
+def handle_leave():
+
+    # User pressed 'LEAVE'
+    # 1. Check if inside any room
+    # 2. tryLeave() which checks if inside a room and ejects him
+
     client_id = request.sid
-    print(f'{client_id} Leaves from {client_ip}.')
-    try_leave(client_ip, client_id)
+    print(f'{client_id} Leaves.')
+    try_leave(client_id)
 
 
-def add_x_to_room(x, room_key, room_val, client_id):
+def add_id_to_room(uid, room_key, room_val):
     join_room(room_key)
-    ip_to_room[x] = room_val
+    id_to_room[uid] = room_val
     nickname = get_nickname(room_val)
-    user = User(x, nickname)
+    user = User(uid, nickname)
     room_val.add(user)
-    print(f'{x} joins room {room_key} as {nickname}!')
+    print(f'{uid} joins room {room_key} as {nickname}!')
     print(rooms)
 
     data = {'code': room_key,
@@ -136,58 +135,72 @@ def add_x_to_room(x, room_key, room_val, client_id):
             }
 
     # Return to sender
-    socket_io.emit('room_code', data, to=client_id)
+    socket_io.emit('room_code', data, to=uid)
     # Notify others
     socket_io.emit('room_update', {'users': room_val.user_nicks()}, room=room_key, include_self=False)
+    # Sender newly connected user the current board
+    for draw_data in room_val.get_board():
+        if draw_data == -1: continue
+        socket_io.emit('draw', draw_data, to=uid)
 
 
-def rm_x_from_room(x, room_key, room_val, client_id):
+def rm_id_from_room(uid, room_key, room_val):
     leave_room(room_key)
-    del ip_to_room[x]
-    room_val.rm(x)
-    print(f'{x} leaves room {room_key}!')
+    del id_to_room[uid]
+    room_val.rm(uid)
+    print(f'{uid} leaves room {room_key}!')
 
     if room_val.is_empty():
         del rooms[room_key]
         print(f'{room_key} is empty, deleting.')
+        return
+
+    # Not empty, notify others
+    socket_io.emit('room_update', {'users': room_val.user_nicks()}, room=room_key, include_self=False)
     print(rooms)
 
 
-def try_leave(client_ip, client_id):
-    # todo log user.timesConnect for each browser connect
-    # todo, if user leaves from another browser, room could be deleted
-    if client_ip in ip_to_room:
-        val = ip_to_room[client_ip]
+def try_leave(client_id):
+
+    # User disconnects, or presses 'LEAVE'
+    # 1. Check if inside any room
+    # 2. onLeave()
+
+    if client_id in id_to_room:
+        val = id_to_room[client_id]
         key = val.code
-        rm_x_from_room(x=client_ip, room_key=key, room_val=val, client_id=client_id)
+        rm_id_from_room(uid=client_id, room_key=key, room_val=val)
 
 
 @socket_io.on('draw')
 def handle_draw(data):
-    ip = request.remote_addr
-    if ip not in ip_to_room:
+    client_id = request.sid
+    if client_id not in id_to_room:
         return
-    socket_io.emit('draw', data, include_self=False, room=ip_to_room[ip].code)
-    stroke.append(data)
+    room = id_to_room[client_id].code
+    socket_io.emit('draw', data, include_self=False, room=room)
+    rooms[room].draw(data)  # Remember draw history
 
 
 @socket_io.on('clear')
 def handle_draw(data):
-    ip = request.remote_addr
-    if ip not in ip_to_room:
+    client_id = request.sid
+    if client_id not in id_to_room:
         return
-    print(f'{ip} Clears board.')  # todo - give more info (which room, etc)
-    socket_io.emit('clear', data, include_self=False, room=ip_to_room[ip].code)
-    stroke.clear()
+    room = id_to_room[client_id].code
+    print(f'{client_id} Clears board in room {room}.')
+    socket_io.emit('clear', data, include_self=False, room=room)
+    rooms[room].clear_board()  # Clear draw history
 
 
 @socket_io.on('guess')
 def handle_guess(data):
-    ip = request.remote_addr
-    if ip not in ip_to_room:
+    client_id = request.sid
+    if client_id not in id_to_room:
         return
-    print(f'{ip} Sends guess.')  # todo - give more info (which room, etc)
-    socket_io.emit('guess', data, include_self=False, room=ip_to_room[ip].code)
+    room = id_to_room[client_id].code
+    print(f'{client_id} Sends a guess in room {room}.')
+    socket_io.emit('guess', data, include_self=False, room=room)
 
 
 if __name__ == '__main__':

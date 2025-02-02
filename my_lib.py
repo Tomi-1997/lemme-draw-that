@@ -39,6 +39,6 @@ def get_nickname(room):
         adj = adj.capitalize()
         ani = ani.capitalize()
         nickname = adj + ' ' + ani
-        if room.ip_not_present(nickname):
+        if room.id_not_present(nickname):
             return nickname
     return nickname
