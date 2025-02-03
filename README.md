@@ -5,7 +5,7 @@ Ever wanted to explain something, and it was easier to draw it? <br>
 - 👋 Host a room.<br>
 - 🤝 Invite others.<br>
 - 💡 Share ideas.<br>
-- 🎨 Everyone not present? Play a drawing guessing game while waiting. <br>
+- 🎨 Not everyone present? Play a drawing guessing game while waiting. <br>
 
 ###### <ins> How it looks </ins>  <br>
 ![D](https://github.com/Tomi-1997/lemme-draw-that/blob/main/demo2.gif) <br>
