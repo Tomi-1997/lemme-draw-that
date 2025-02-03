@@ -8,6 +8,7 @@ let roomLocked = false;
 /* Canvas, socket, guesser */
 let canvas = null;
 let otherCanvas = null;
+let otherCanvasChanged = false;
 let canvasActive = false;
 let intervalId = null;
 let ctx = null;
@@ -26,6 +27,8 @@ const eraserSize = 40;
 let userColor = brushColor;
 let userSize = brushSize;
 let eraserRad = 0;
+
+let mobile_width = 300;
 
 
 /* Work queue, to let other clients paint on screen */
@@ -63,13 +66,13 @@ function setCanvasSize(canvas)
 {
     if (window.innerWidth <= 600) 
     {
-        canvas.width = 300;
+        canvas.width = mobile_width;
         canvas.height = 200;
         
     } else 
     {
         canvas.width = 800;
-        canvas.height = 500;
+        canvas.height = 600;
     }
     otherCanvas.width = canvas.width;
     otherCanvas.height = canvas.height;
@@ -82,8 +85,12 @@ function setCanvasSize(canvas)
 // not exactly merges then
 function mergeCanvases()
 {
-    ctx.drawImage(otherCanvas, 0, 0);
-    otherCtx.clearRect(0, 0, canvas.width, canvas.height);
+    if (otherCanvasChanged)
+    {
+        ctx.drawImage(otherCanvas, 0, 0);
+        otherCtx.clearRect(0, 0, canvas.width, canvas.height);
+        otherCanvasChanged = false;
+    }
 }
 
 
@@ -342,6 +349,7 @@ function otherDraw(data)
     otherCtx.lineTo(data.normX * canvas.width, data.normY * canvas.height);
     otherCtx.stroke();
     otherCtx.closePath();
+    otherCanvasChanged = true;
 }
 
 
@@ -453,6 +461,9 @@ function saveAsPng(button)
 // LEAVE - Leaves room
 function leaveRoom(button)
 {
+    // Reset buttons
+    elem('lock-but').innerText = 'LOCK';
+
     // Canvas & Info
     elem('content').style.display = 'none';
     elem('content-info').style.display = 'none';
@@ -624,9 +635,9 @@ function addEvents()
 
                 // Canvas + info show
                 elem('content').style.display = 'flex';
-                if (canvas.width <= 300)
+                if (canvas.width <= mobile_width)
                 {
-                    elem('content').style.display = 'block';
+                    elem('content').style.flexDirection = 'column';
                 }
                 elem('content-info').style.display = 'block';
                 canvasActive = true;

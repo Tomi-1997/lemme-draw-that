@@ -105,8 +105,8 @@ def handle_join(data):
 
 @socket_io.on('connect')
 def handle_connect():
-    # User connects to app
-    # Wait for further input (host \ join)
+    # User connected to web
+    # ☻ Wait for join \ host
 
     client_ip = request.remote_addr
     uid = request.sid
@@ -115,9 +115,9 @@ def handle_connect():
 
 @socket_io.on('disconnect')
 def handle_disconnect():
-    # User disconnected
-    # 1. Check if inside any room
-    # 2. tryLeave() which checks if inside a room and ejects him
+    # User left website
+    # ☺ Check if inside a room
+    # ☺ Remove
 
     client_id = request.sid
     print(f'{client_id} DCs.')
@@ -126,9 +126,9 @@ def handle_disconnect():
 
 @socket_io.on('leave')
 def handle_leave():
-    # User pressed 'LEAVE'
-    # 1. Check if inside any room
-    # 2. tryLeave() which checks if inside a room and ejects him
+    # User pressed LEAVE
+    # ☺ Check if inside a room
+    # ☺ Remove
 
     client_id = request.sid
     print(f'{client_id} Leaves.')
@@ -136,6 +136,12 @@ def handle_leave():
 
 
 def add_id_to_room(uid, room_key, room_val):
+    # User joined \ hosted
+    # ☺ Add to socketIO room
+    # ☺ Generate nickname
+    # ☺ Create User, add to room
+    # ☺ Send him room code, canvas data
+    # ☺ Send others user list
     join_room(room_key)
     id_to_room[uid] = room_val
     nickname = get_nickname(room_val)
@@ -155,11 +161,16 @@ def add_id_to_room(uid, room_key, room_val):
     socket_io.emit('room_update', {'users': room_val.user_nicks()}, room=room_key, include_self=False)
     # Sender newly connected user the current board
     for draw_data in room_val.get_board():
-        if draw_data == -1: continue
+        if draw_data == -1:
+            continue
         socket_io.emit('draw', draw_data, to=uid)
 
 
 def rm_id_from_room(uid, room_key, room_val):
+    # User left \ dc's
+    # ☺ Remove from socketIO room
+    # ☺ Remove from room and dict
+    # ☺ Remove room if empty, notify others otherwise
     leave_room(room_key)
     del id_to_room[uid]
     room_val.rm(uid)
@@ -176,10 +187,8 @@ def rm_id_from_room(uid, room_key, room_val):
 
 
 def try_leave(client_id):
-    # User disconnects, or presses 'LEAVE'
-    # 1. Check if inside any room
-    # 2. onLeave()
-
+    # ☺ Check if inside a room
+    # ☺ Remove
     if client_id in id_to_room:
         val = id_to_room[client_id]
         key = val.code

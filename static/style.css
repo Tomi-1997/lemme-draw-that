@@ -140,12 +140,22 @@ canvas
     cursor: pointer; /* Pointer cursor on hover */
     transition: 0.3s ease-in-out transform; /* Smooth background color transition */
     font-size: large;
+
+    /* Avoid having 2 lines */
+    overflow: hidden;
+    white-space: nowrap;
 }
 
 .c-button
 {
     width: 140px;
     margin-left: 20px;
+}
+
+.highlight /* e.g the clear button */
+{
+    background-color: darkred;
+    margin-bottom: 20px;
 }
 
 
