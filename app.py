@@ -1,3 +1,5 @@
+import time
+
 from flask import Flask, render_template, request
 from flask_socketio import SocketIO, join_room, leave_room
 from Room import Room
@@ -50,7 +52,7 @@ def handle_host():
 
     new_room = Room(room_code)
     rooms[room_code] = new_room
-    print(f'{client_id} hosts!')
+    print(f'[{now()}] {client_id} hosts!')
     add_id_to_room(uid=client_id, room_key=room_code, room_val=new_room)
 
 
@@ -110,7 +112,7 @@ def handle_connect():
 
     client_ip = request.remote_addr
     uid = request.sid
-    print(f'{uid} Connects from {client_ip}.')
+    print(f'[{now()}] {uid} Connects from {client_ip}.')
 
 
 @socket_io.on('disconnect')
@@ -120,7 +122,7 @@ def handle_disconnect():
     # ☺ Remove
 
     client_id = request.sid
-    print(f'{client_id} DCs.')
+    print(f'[{now()}] {client_id} DCs.')
     try_leave(client_id)
 
 
@@ -131,7 +133,7 @@ def handle_leave():
     # ☺ Remove
 
     client_id = request.sid
-    print(f'{client_id} Leaves.')
+    print(f'[{now()}] {client_id} Leaves.')
     try_leave(client_id)
 
 
@@ -147,7 +149,7 @@ def add_id_to_room(uid, room_key, room_val):
     nickname = get_nickname(room_val)
     user = User(uid, nickname)
     room_val.add(user)
-    print(f'{uid} joins room {room_key} as {nickname}!')
+    print(f'[{now()}] {uid} joins room {room_key} as {nickname}!')
     print(rooms)
 
     data = {'code': room_key,
@@ -174,11 +176,11 @@ def rm_id_from_room(uid, room_key, room_val):
     leave_room(room_key)
     del id_to_room[uid]
     room_val.rm(uid)
-    print(f'{uid} leaves room {room_key}!')
+    print(f'[{now()}] {uid} leaves room {room_key}!')
 
     if room_val.is_empty():
         del rooms[room_key]
-        print(f'{room_key} is empty, deleting.')
+        print(f'[{now()}] {room_key} is empty, deleting.')
         return
 
     # Not empty, notify others
@@ -211,7 +213,7 @@ def handle_draw(data):
     if client_id not in id_to_room:
         return
     room = id_to_room[client_id].code
-    print(f'{client_id} Clears board in room {room}.')
+    print(f'[{now()}] {client_id} Clears board in room {room}.')
     socket_io.emit('clear', data, include_self=False, room=room)
     rooms[room].clear_board()  # Clear draw history
 
@@ -222,7 +224,7 @@ def handle_guess(data):
     if client_id not in id_to_room:
         return
     room = id_to_room[client_id].code
-    print(f'{client_id} Sends a guess in room {room}.')
+    print(f'[{now()}] {client_id} Sends a guess in room {room}.')
     socket_io.emit('guess', data, include_self=False, room=room)
 
 
@@ -232,11 +234,15 @@ def handle_guess():
     if client_id not in id_to_room:
         return
     room = id_to_room[client_id].code
-    print(f'{client_id} Sends a lock \\ unlock request in room {room}.')
+    print(f'[{now()}] {client_id} Sends a lock \\ unlock request in room {room}.')
     rooms[room].lock_unlock()
     socket_io.emit('lock', {'lock': rooms[room].locked()}, include_self=True, room=room)
 
 
+def now():
+    return time.ctime()
+
+
 if __name__ == '__main__':
     print("Starting")
-    socket_io.run(app, allow_unsafe_werkzeug=True, host='0.0.0.0', port=8080, debug=True)
+    socket_io.run(app, host='0.0.0.0', port=8080, debug=True)
