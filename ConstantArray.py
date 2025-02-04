@@ -1,3 +1,6 @@
+# List with fixed length, overwriting the oldest element
+# For remembering the current canvas state
+
 class ConstantArray:
     def __init__(self, size=1024):
         self.size = size

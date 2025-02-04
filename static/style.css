@@ -23,7 +23,7 @@ body
 
 
 
-
+/* For mobile \ small window */
 @media (max-width: 800px) 
 {
     body 
@@ -32,6 +32,7 @@ body
       margin-top: 10%;
     }
 
+    /* Place buttow row below canvas on mobile */
     .content
     {
         flex-direction: column;
@@ -43,15 +44,6 @@ body
         margin-left: 0;
         margin-top: 20px;
     }
-}
-
-
-.content
-{
-    /* position: relative; */
-    /* right: 300px; */
-    /* display: flex;
-    flex-direction: row; */
 }
 
 
@@ -68,8 +60,8 @@ body
 
 .button-row 
 {
-    gap: 20px; /* Space between buttons */
-    margin-bottom: 20px; /* Space between buttons and the div */
+    gap: 20px;
+    margin-bottom: 20px;
 
     text-align: center;
     display: flex;
@@ -86,6 +78,11 @@ canvas
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
     animation: pop 0.4s ease forwards;
     background-color: rgb(30, 30, 30);
+}
+
+canvas.eraser-active
+{
+    cursor: url('eraser-icon.png'), auto;
 }
 
 
@@ -141,7 +138,7 @@ canvas
     transition: 0.3s ease-in-out transform; /* Smooth background color transition */
     font-size: large;
 
-    /* Avoid having 2 lines */
+    /* Avoid having 2 lines of text on button */
     overflow: hidden;
     white-space: nowrap;
 }
@@ -155,7 +152,7 @@ canvas
 .highlight /* e.g the clear button */
 {
     background-color: darkred;
-    margin-bottom: 20px;
+    margin-bottom: 20px; /* Make it a bit higher */
 }
 
 
@@ -166,17 +163,19 @@ canvas
     border-color: gainsboro;
 }
 
-.button:disabled {
+.button:disabled 
+{
     cursor: not-allowed;
     opacity: 0.5;
 }
 
 
 
-.info-circle {
+.info-circle 
+{
     position: absolute;
-    top: -20px; /* Adjust this value to move the circle higher or lower */
-    right: -25px; /* Align to the right */
+    top: -20px; /* A bit upwards of parent div */
+    right: -25px; /* A bit to the right of parent div */
     text-align: center;
     display: inline-block;
     opacity: 0.25;
@@ -221,7 +220,8 @@ canvas
     opacity: 1;
 }
 
-.info-circle:hover{
+.info-circle:hover
+{
     opacity: 1;
 }
 

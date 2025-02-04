@@ -1,5 +1,3 @@
-console.log('JS Starting')
-
 /* Join & Host */
 let numPadInput = '';
 let numPadInfo = null;
@@ -31,7 +29,7 @@ let eraserRad = 0;
 let mobile_width = 300;
 
 
-/* Work queue, to let other clients paint on screen */
+/* Work queue, to let other clients erase canvas */
 var workQueue = []
 var runnable = function(fn, context, params)
 {
@@ -53,9 +51,8 @@ window.addEventListener('load', function()
     otherCtx = otherCanvas.getContext('2d');
     guessPara = this.document.getElementById('info-el');
 
-    // Generate a random color for each user
-    ctx.strokeStyle = userColor; // Set the stroke color for this user
-
+    // Add bright random color generation (?)
+    ctx.strokeStyle = userColor;
     socket = io();
     addEvents();
 });
@@ -69,7 +66,8 @@ function setCanvasSize(canvas)
         canvas.width = mobile_width;
         canvas.height = 200;
         
-    } else 
+    } 
+    else 
     {
         canvas.width = 800;
         canvas.height = 600;
@@ -160,9 +158,7 @@ function onClear()
 {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     otherCtx.clearRect(0, 0, canvas.width, canvas.height);
-    canvas.style.animation = 'none'; // Remove the animation
-    canvas.offsetHeight; // Trigger reflow
-    canvas.style.animation = ''; // Reapply the 
+    divReanimate(canvas);
 }
 
 
@@ -194,11 +190,13 @@ function onEraser(button)
     {
         userSize = eraserSize;
         button.innerText = "[E]DITOR";
+        canvas.classList.add('eraser-active');
     }
     else
     {
         userSize = brushSize;
         button.innerText = "[E]RASER";
+        canvas.classList.remove('eraser-active');
     }
 
     // todo replace with buttonPop()
@@ -688,6 +686,3 @@ function buttonPop(button)
     button.offsetHeight;
     button.style.animation = "pop 0.2s ease forwards";
 }
-
-
-console.log('JS End')

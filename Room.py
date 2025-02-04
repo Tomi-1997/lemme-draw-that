@@ -1,5 +1,6 @@
 from ConstantArray import ConstantArray
 
+
 # A Room for a canvas app
 # User list
 # A 6 digit room code
@@ -24,24 +25,24 @@ class Room:
             return
         self.users.append(user)
 
-    def rm(self, element):
+    def rm(self, element):  # Remove user with matching ID, if found
         index = self.find_id(element)
         if index != -1:
             del self.users[index]
 
-    def find_id(self, uid):
+    def find_id(self, uid):  # Find user with matching ID
         for i, user in enumerate(self.users):
             if uid == user.id:
                 return i
         return -1
 
-    def find_nick(self, uid):
+    def find_nick(self, uid):  # Find user nickname by given ID
         for i, user in enumerate(self.users):
             if uid == user.id:
                 return user.nick
         return -1
 
-    def id_present(self, uid):
+    def id_present(self, uid):  # Check for user with matching ID
         return self.find_id(uid) != -1
 
     def id_not_present(self, element):
@@ -53,7 +54,7 @@ class Room:
     def locked(self):
         return self.is_locked
 
-    def lock_unlock(self):
+    def lock_unlock(self):  # Flips current lock state
         self.is_locked = not self.is_locked
 
     def user_nicks(self):
@@ -61,9 +62,6 @@ class Room:
         for user in self.users:
             ans.append(user.nick)
         return ans
-    #
-    # def at(self, i):
-    #     return self.data[i]
 
     def draw(self, elem):
         self.board_state.add(elem)
