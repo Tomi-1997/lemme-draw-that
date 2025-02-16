@@ -1,5 +1,4 @@
 import time
-
 from flask import Flask, render_template, request
 from flask_socketio import SocketIO, join_room, leave_room
 from Room import Room
@@ -245,4 +244,4 @@ def now():
 
 if __name__ == '__main__':
     print("Starting")
-    socket_io.run(app, host='0.0.0.0', port=8080, debug=True)
+    socket_io.run(app, host='0.0.0.0')
