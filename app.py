@@ -4,18 +4,20 @@ from flask_socketio import SocketIO, join_room, leave_room
 from Room import Room
 from User import User
 from my_lib import *
+from typing import Dict
 
 app = Flask(__name__)
 socket_io = SocketIO(app)
 
 # {Code: Room}
-rooms = {}
+rooms: Dict[int, Room] = dict()
 # {  ID: Room}
 id_to_room = {}
 # {Constants}
 _MAX_ROOM = 8  # Max rooms overall
 _MAX_USERS = 8  # Max users for one room
 _ROOM_CODE_LEN = 6
+_PRINT = True
 
 app.config['MAX_CONTENT_LENGTH'] = 128
 
@@ -44,7 +46,7 @@ def send_private_data(event, data, to):
     try:
         socket_io.emit(event, data, to=to)
     except Exception as e:
-        print(f'Error sending data to {to}, error: {e}')
+        print_if(f'Error sending data to {to}, error: {e}')
         try_leave(to)
 
 
@@ -52,7 +54,7 @@ def send_room_data(event, data, include_self, room, src=None):
     try:
         socket_io.emit(event, data, include_self=include_self, room=room)
     except Exception as e:
-        print(f'Error sending data to {src}, error: {e}')
+        print_if(f'Error sending data to {src}, error: {e}')
         if src is not None:
             try_leave(src)
 
@@ -87,7 +89,9 @@ def handle_host():
     # ☻ Create room
     # ☻ Add to room, send data
 
+    print_if(f'[{now()}] {client_id} wants to host!')
     if client_id in id_to_room:
+        print_if(f'[{now()}] {client_id} wants to host, yet is in a room')
         return
 
     # Check for room limit
@@ -105,7 +109,7 @@ def handle_host():
 
     new_room = Room(room_code)
     rooms[room_code] = new_room
-    print(f'[{now()}] {client_id} hosts!')
+    print_if(f'[{now()}] {client_id} now hosts room {new_room.code}!')
     add_id_to_room(uid=client_id, room_key=room_code, room_val=new_room)
 
 
@@ -115,31 +119,25 @@ def handle_join(data):
     if too_soon(client_id, _REQUEST_JOIN):
         return
 
+    print_if(f'[{now()}] {client_id} wants to join!')
+
     # User clicked on JOIN
     # ☻ Validate user input
     # ☻ Search for room with same code
     # ☻ Check room capacity
     # ☻ Add to room, send data
 
-    import re
+    if invalid_join(data):
+        damn('join', client_id)
+        send_private_data('room_code', {'code': '-1', 'message': 'Invalid code.'}, to=client_id)
+        return
+
     code = data['code']
-    not_numbers = re.findall(r'[^0-9]', code)
-    numbers = re.findall(r'[0-9]', code)
-
-    if len(not_numbers) > 0:
-        message = "Non-numbers in code."
-        send_private_data('room_code', {'code': '-1', 'message': message}, to=client_id)
-        return
-
-    if len(numbers) != _ROOM_CODE_LEN:
-        message = "Six digits required."
-        send_private_data('room_code', {'code': '-1', 'message': message}, to=client_id)
-        return
-
     for key, val in rooms.items():
 
         if key != code:  # Different room key
             continue
+
         if val.id_present(client_id):  # Room has same ID inside, somehow
             continue
 
@@ -169,7 +167,7 @@ def handle_connect():
     client_ip = request.remote_addr
     uid = request.sid
 
-    print(f'[{now()}] {uid} Connects from {client_ip}.')
+    print_if(f'[{now()}] {uid} Connects from {client_ip}.')
 
 
 @socket_io.on('disconnect')
@@ -180,7 +178,7 @@ def handle_disconnect():
     # ☺ Remove
 
     client_id = request.sid
-    print(f'[{now()}] {client_id} DCs.')
+    print_if(f'[{now()}] {client_id} DCs.')
     try_leave(client_id)
 
 
@@ -194,7 +192,7 @@ def handle_leave():
     # ☺ Remove
 
     client_id = request.sid
-    print(f'[{now()}] {client_id} Leaves.')
+    print_if(f'[{now()}] {client_id} Wants to leave.')
     try_leave(client_id)
 
 
@@ -208,7 +206,7 @@ def add_id_to_room(uid, room_key, room_val):
     try:
         join_room(room_key)
     except Exception as e:
-        print(f'Error on join_room() {room_key} with client id {uid}, error: {e}')
+        print_if(f'Error on join_room() {room_key} with client id {uid}, error: {e}')
         message = "Error joining room."
         send_private_data('room_code', {'code': '-1', 'message': message}, to=uid)
         return
@@ -217,8 +215,8 @@ def add_id_to_room(uid, room_key, room_val):
     nickname = get_nickname(room_val)
     user = User(uid, nickname)
     room_val.add(user)
-    print(f'[{now()}] {uid} joins room {room_key} as {nickname}!')
-    print(rooms)
+    print_if(f'[{now()}] {uid} joins room {room_key} as {nickname}!')
+    print_if(rooms)
 
     data = {'code': room_key,
             'users': room_val.user_nicks(),
@@ -245,20 +243,20 @@ def rm_id_from_room(uid, room_key, room_val):
     try:
         leave_room(room_key)
     except Exception as e:
-        print(f'Error on leave_room() {room_key} with client id {uid}, error: {e}')
+        print_if(f'Error on leave_room() {room_key} with client id {uid}, error: {e}')
 
     del id_to_room[uid]
     room_val.rm(uid)
-    print(f'[{now()}] {uid} leaves room {room_key}!')
+    print_if(f'[{now()}] {uid} leaves room {room_key}!')
 
     if room_val.is_empty():
         del rooms[room_key]
-        print(f'[{now()}] {room_key} is empty, deleting.')
+        print_if(f'[{now()}] {room_key} is empty, deleting.')
         return
 
     # Not empty, notify others
     send_room_data('room_update', {'users': room_val.user_nicks()}, room=room_key, include_self=False)
-    print(rooms)
+    print_if(rooms)
 
 
 def try_leave(client_id):
@@ -270,17 +268,6 @@ def try_leave(client_id):
         rm_id_from_room(uid=client_id, room_key=key, room_val=val)
 
 
-def illegal_draw(data):
-    keys = ['normX', 'normLX', 'normY', 'normLY']
-    for key in keys:
-        if key not in data:
-            return True
-        val = data[key]
-        if val > 1 or val < 0:
-            return True
-    return False
-
-
 @socket_io.on('draw')
 def handle_draw(data):
     client_id = request.sid
@@ -290,7 +277,8 @@ def handle_draw(data):
     if client_id not in id_to_room:
         return
 
-    if illegal_draw(data):
+    if invalid_draw(data):
+        damn('draw', client_id)
         return
 
     room = id_to_room[client_id].code
@@ -299,7 +287,7 @@ def handle_draw(data):
 
 
 @socket_io.on('clear')
-def handle_clear(data):
+def handle_clear():
     client_id = request.sid
     if too_soon(client_id, _REQUEST_CLEAR):
         return
@@ -308,22 +296,15 @@ def handle_clear(data):
         return
 
     # Validate data
+    # ... (no data)
 
     # Data okay, clear board
     room = id_to_room[client_id].code
-    print(f'[{now()}] {client_id} Clears board in room {room}.')
+    print_if(f'[{now()}] {client_id} Clears board in room {room}.')
 
     # Notify, clear board mem
-    send_room_data('clear', data, include_self=False, room=room, src=client_id)
+    send_room_data('clear', {}, include_self=True, room=room, src=client_id)
     rooms[room].clear_board()  # Clear draw history
-
-
-def illegal_guess(data):
-    if 'len' not in data:
-        return True
-    if data['len'] > 10 or data['len'] < 2:
-        return True
-    return True
 
 
 @socket_io.on('guess')
@@ -337,12 +318,12 @@ def handle_guess(data):
 
     # Validate data
     if invalid_guess(data):
+        damn('guess', client_id)
         return
 
     # Data ok, send others guess
     room = id_to_room[client_id].code
-    print(f'd={data}')
-    print(f'[{now()}] {client_id} Sends a guess in room {room}.')
+    print_if(f'[{now()}] {client_id} Sends a guess in room {room}.')
     send_room_data('guess', data, include_self=False, room=room, src=client_id)
 
 
@@ -360,13 +341,22 @@ def handle_lock():
 
     # Data okay, send room lock state
     room = id_to_room[client_id].code
-    print(f'[{now()}] {client_id} Sends a lock \\ unlock request in room {room}.')
+    print_if(f'[{now()}] {client_id} Sends a lock \\ unlock request in room {room}.')
     rooms[room].lock_unlock()
     send_room_data('lock', {'lock': rooms[room].locked()}, include_self=True, room=room, src=client_id)
 
 
 def now():
     return time.ctime()
+
+
+def damn(func, uid):
+    print(f'[{now()}] {uid} Gave invalid data at {func}().')
+
+
+def print_if(text):
+    if _PRINT:
+        print(text)
 
 
 if __name__ == '__main__':

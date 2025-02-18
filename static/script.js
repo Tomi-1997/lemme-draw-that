@@ -166,8 +166,7 @@ function onClear()
 // Clear button press
 function onClearOrigin(button)
 {
-    onClear();
-    socket.emit('clear', {});
+    socket.emit('clear');
     disableXForYSec(button, 3000);
 }
 
