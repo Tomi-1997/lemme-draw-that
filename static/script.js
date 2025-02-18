@@ -19,6 +19,7 @@ let erasing = false;
 let drawing = false;
 let lastX = 0;
 let lastY = 0;
+let skip = false;
 const brushColor = '#dcdcdc';
 const brushSize = 1;
 const eraserSize = 40;
@@ -226,6 +227,11 @@ function onGuessOrigin(button)
 // Guesser button press
 function onGuess(data)
 {
+    console.log(data)
+    if (!data) return;
+    if (!data.len) return;
+    if (typeof data.len !== 'string');
+    if (data.len > 10 || data.len < 0) return;
     let len = "";
     for (let i = 0; i < data.len; i++)
     {
@@ -278,6 +284,8 @@ function onPress(e)
 // DRAW - Actually draw on canvas, and EMIT on socket
 function onMove(e)
 {
+    skip = !skip;
+    if (skip) {return;}
     ctx.strokeStyle = userColor;
     ctx.lineWidth = userSize;
     pos = getPosition(e);
@@ -304,14 +312,15 @@ function onMove(e)
 
     let normLX = lastX / canvas.width;
     let normLY = lastY / canvas.height;
-    
+
     // Emit the drawing data to other clients
-    socket.emit('draw', { normX, normY, normLX, normLY, 
+    socket.emit('draw', { normX, normY, normLX, normLY,
         userColor, userSize, erasing});
-    
+
     // Update lastX and lastY
     lastX = x;
     lastY = y;
+
 }
 
 

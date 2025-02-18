@@ -42,3 +42,20 @@ def get_nickname(room):
         if room.id_not_present(nickname):
             return nickname
     return nickname
+
+
+def invalid_guess(d):
+    # Expected example:
+    # d = {'len' : 4}
+    if not isinstance(d, dict):
+        return False
+    if len(d) != 1:
+        return False
+    if 'len' not in d:
+        return False
+    dl = d['len']
+    if not isinstance(dl, int):
+        return False
+    if 1 > dl > 10:
+        return False
+    return True
