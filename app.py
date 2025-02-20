@@ -1,18 +1,21 @@
 import time
+import hashlib
 from flask import Flask, render_template, request
-from flask_socketio import SocketIO, join_room, leave_room
+from flask_socketio import SocketIO, join_room, leave_room, disconnect
 from Room import Room
 from User import User
 from my_lib import *
 from typing import Dict
 
 app = Flask(__name__)
-socket_io = SocketIO(app)
+socket_io = SocketIO(app, manage_session=False)
 
 # {Code: Room}
 rooms: Dict[int, Room] = dict()
 # {  ID: Room}
-id_to_room = {}
+id_to_room: Dict[str, str] = dict()
+# { SHA: ID}
+whitelist: Dict[str, str] = dict()
 # {Constants}
 _MAX_ROOM = 8  # Max rooms overall
 _MAX_USERS = 8  # Max users for one room
@@ -47,7 +50,7 @@ def send_private_data(event, data, to):
         socket_io.emit(event, data, to=to)
     except Exception as e:
         print_if(f'Error sending data to {to}, error: {e}')
-        try_leave(to)
+        # try_leave(to)
 
 
 def send_room_data(event, data, include_self, room, src=None):
@@ -55,8 +58,8 @@ def send_room_data(event, data, include_self, room, src=None):
         socket_io.emit(event, data, include_self=include_self, room=room)
     except Exception as e:
         print_if(f'Error sending data to {src}, error: {e}')
-        if src is not None:
-            try_leave(src)
+        # if src is not None:
+        #     try_leave(src)
 
 
 def too_soon(uid, request_id=_REQUEST_DEFAULT):
@@ -159,27 +162,61 @@ def handle_join(data):
     send_private_data('room_code', {'code': '-1', 'message': message}, to=client_id)
 
 
+def hash_ag_ip():
+    # Generate ID By IP + Browser
+    user_agent = request.headers.get('User-Agent')
+    ip_adr = request.remote_addr
+    str_cat = ip_adr + user_agent
+    hashed = hashlib.sha3_256(str_cat.encode()).hexdigest()
+    return hashed
+
+
 @socket_io.on('connect')
 def handle_connect():
     # User connected to web
     # ☻ Wait for join \ host
 
     client_ip = request.remote_addr
-    uid = request.sid
+    sock_id = request.sid
+    hashed_id = hash_ag_ip()
 
-    print_if(f'[{now()}] {uid} Connects from {client_ip}.')
+    # First connection
+    if hashed_id not in whitelist:
+        whitelist[hashed_id] = sock_id
+        print_if(f'[{now()}] {sock_id} Connects from {client_ip}.')
+        send_private_data('connect_ok', data={'message': 'hi!'}, to=sock_id)
+
+    else:
+        # Hashed ID already is connected
+        if whitelist[hashed_id] is not None:
+            print_if(f'[{now()}] {sock_id} Duplicate connection from {client_ip}.')
+            socket_io.emit('duplicate', data={'message': 'bad'}, to=sock_id)
+            disconnect(sock_id)
+            print_if(f'[{now()}] {sock_id} forcibly disconnected.')
+
+        else:
+            # Hashed ID -was- connected
+            whitelist[hashed_id] = sock_id
+            print_if(f'[{now()}] {sock_id} Reconnects from {client_ip}.')
+            send_private_data('connect_ok', data={'message': 'hi!'}, to=sock_id)
 
 
 @socket_io.on('disconnect')
-def handle_disconnect():
+def handle_disconnect(): # TODO room on leave bug, does not close
 
     # User left website
-    # ☺ Check if inside a room
+    # ☺ Set hash ID to be none
+    # ☺ Check if inside any room
     # ☺ Remove
 
-    client_id = request.sid
-    print_if(f'[{now()}] {client_id} DCs.')
-    try_leave(client_id)
+    hashed_id = hash_ag_ip()
+    sock_id = request.sid
+    print_if(f'[{now()}] {sock_id} DCs.')
+    if hashed_id in whitelist:
+        if whitelist[hashed_id] == sock_id:
+            whitelist[hashed_id] = None
+
+        try_leave(sock_id)
 
 
 @socket_io.on('leave')
@@ -241,15 +278,15 @@ def rm_id_from_room(uid, room_key, room_val):
     # ☺ Remove room if empty, notify others otherwise
 
     try:
-        leave_room(room_key)
+        leave_room(room_key)  # socketIo function
     except Exception as e:
         print_if(f'Error on leave_room() {room_key} with client id {uid}, error: {e}')
 
-    del id_to_room[uid]
-    room_val.rm(uid)
+    del id_to_room[uid]  # Remove from dict
+    room_val.rm(uid)  # Room object remove
     print_if(f'[{now()}] {uid} leaves room {room_key}!')
 
-    if room_val.is_empty():
+    if room_val.is_empty():  # Remove room, if empty
         del rooms[room_key]
         print_if(f'[{now()}] {room_key} is empty, deleting.')
         return

@@ -59,6 +59,9 @@ def invalid_join(d):
     if not isinstance(d, dict):
         return True
 
+    if len(d) != 1:
+        return True
+
     if 'code' not in d:
         return True
 
@@ -117,13 +120,18 @@ def invalid_guess(d):
     # d = {'len' : 4}
     if not isinstance(d, dict):
         return True
+
     if len(d) != 1:
         return True
+
     if 'len' not in d:
         return True
+
     dl = d['len']
     if not isinstance(dl, int):
         return True
+
     if 1 > dl > 10:
         return True
+
     return False

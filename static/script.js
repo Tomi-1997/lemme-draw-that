@@ -226,7 +226,6 @@ function onGuessOrigin(button)
 // Guesser button press
 function onGuess(data)
 {
-    console.log(data)
     if (!data) return;
     if (!data.len) return;
     if (typeof data.len !== 'string');
@@ -454,10 +453,12 @@ function saveAsPng(button)
 {
     const link = document.createElement('a');
     let now = new Date();
-    let hours = now.getHours();
-    let minutes = now.getMinutes();
+    let day = String(now.getDate()).padStart(2, '0');
+    let month = String(now.getMonth() + 1).padStart(2, '0');
+    let hours = String(now.getHours()).padStart(2, '0');
+    let minutes = String(now.getMinutes()).padStart(2, '0');
 
-    link.download = `image-at-${hours}${minutes}.png`;
+    link.download = `lmdt-${day}-${month}-${hours}-${minutes}.png`;
     link.href = canvas.toDataURL('image/png');
     link.click();
     disableXForYSec(button, 5000);
@@ -507,6 +508,31 @@ function onLock(data)
     }
     divReanimate(button);
     disableXForYSec(button, 5000);
+}
+
+function invalidSt(st)
+{
+    if (typeof st !== 'string') return true;
+    if (st.length === 0) return true;
+
+    // alphabetic letters + whitespace
+    const expr = /^[a-zA-z\s]+$/;
+    if (!expr.test(st)) return true;
+
+    return false;
+}
+
+function invalidStArray(userList)
+{
+    if (typeof userList === 'string') return invalidSt(userList);
+    if (!Array.isArray(userList)) return true;
+    let bad = false;
+    userList.forEach(val =>
+    {
+        if (invalidSt(val)) bad = true;
+    }
+    );
+    return bad;
 }
 
 
@@ -624,15 +650,33 @@ function addEvents()
                     return;
                 }
 
+                if (data === null || data === undefined) return;
+                if (typeof data !== 'object') return;
+                if (!data.hasOwnProperty('code')) return;
+                if (!data.hasOwnProperty('my_nick')) return;
+                if (!data.hasOwnProperty('users')) return;
+                
 
                 // Get code + my nick
                 currentRoom = data.code;
                 myNickname = data.my_nick;
-                
+
+
                 // Get users
                 let userList = data.users;
-                initializeUserList(userList);
 
+
+                // Validate
+                if (typeof currentRoom != 'string') return;
+                const sixDig = /^[0-9]{6}$/;
+                if (!sixDig.test(currentRoom)) return;
+                if (invalidSt(myNickname)) return;
+                if (invalidStArray(userList)) return;
+
+
+                // All good
+                initializeUserList(userList);
+                
                 // Display divs
                 elem('room-info-el').innerText = "Room code: " + currentRoom;
 
@@ -662,6 +706,16 @@ function addEvents()
         socket.on('lock', (data) =>
             {
                 onLock(data);
+            });
+
+
+        // Duplicate connection
+        socket.on('disconnect', (data) =>
+            {
+                let message = "Disconnected by server.";
+                message = message + " Possible duplicate connection."
+                document.body.innerHTML = message;
+                socket.disconnect(true);
             });
 
         // Press e, swap brush / eraser modes
