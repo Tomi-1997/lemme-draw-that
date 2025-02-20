@@ -1,4 +1,4 @@
-from ConstantArray import ConstantArray
+from src.ConstantArray import ConstantArray
 
 
 # A Room for a canvas app

@@ -27,7 +27,7 @@ def random_str(k, rooms):
 
 def get_nickname(room):
     import json
-    with open('nickname.json', 'r') as f:
+    with open('src\\nickname.json', 'r') as f:
         data = json.load(f)
     adj = data['adjectives']
     ani = data['animals']

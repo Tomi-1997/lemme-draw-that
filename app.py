@@ -2,9 +2,9 @@ import time
 import hashlib
 from flask import Flask, render_template, request
 from flask_socketio import SocketIO, join_room, leave_room, disconnect
-from Room import Room
-from User import User
-from my_lib import *
+from src.Room import Room
+from src.User import User
+from src.my_lib import *
 from typing import Dict
 
 app = Flask(__name__)
@@ -13,9 +13,9 @@ socket_io = SocketIO(app, manage_session=False)
 # {Code: Room}
 rooms: Dict[int, Room] = dict()
 # {  ID: Room}
-id_to_room: Dict[str, str] = dict()
+id_to_room = {}
 # { SHA: ID}
-whitelist: Dict[str, str] = dict()
+whitelist = {}
 # {Constants}
 _MAX_ROOM = 8  # Max rooms overall
 _MAX_USERS = 8  # Max users for one room
@@ -202,7 +202,7 @@ def handle_connect():
 
 
 @socket_io.on('disconnect')
-def handle_disconnect(): # TODO room on leave bug, does not close
+def handle_disconnect():
 
     # User left website
     # ☺ Set hash ID to be none

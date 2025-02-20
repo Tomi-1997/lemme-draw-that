@@ -226,6 +226,7 @@ function onGuessOrigin(button)
 // Guesser button press
 function onGuess(data)
 {
+    // Expect a number between 0 and 10-ish
     if (!data) return;
     if (!data.len) return;
     if (typeof data.len !== 'string');
@@ -560,6 +561,27 @@ function initializeUserList(userList)
 }
 
 
+function invalidDict(data, keys)
+{
+    if (data === null || data === undefined) return true;
+    if (typeof data !== 'object') return true;
+    ans = false;
+    let foundKeys = 0;
+    for (const key in data)
+    {
+        if (!keys.includes(key))
+        {
+            return true;
+        }
+
+        foundKeys++;
+    }
+
+    // Return if there are keys missing
+    return foundKeys !== keys.length;
+}
+
+
 // SOCKET EVENTS
 // Listeners - mouse press, mouse move, mouse up, socker events
 function addEvents()
@@ -649,19 +671,14 @@ function addEvents()
                     divReanimate(numPadInfo);
                     return;
                 }
-
-                if (data === null || data === undefined) return;
-                if (typeof data !== 'object') return;
-                if (!data.hasOwnProperty('code')) return;
-                if (!data.hasOwnProperty('my_nick')) return;
-                if (!data.hasOwnProperty('users')) return;
                 
+                const keys = ['code', 'my_nick', 'users'];
+                if (invalidDict(data, keys)) return false;
+
 
                 // Get code + my nick
                 currentRoom = data.code;
                 myNickname = data.my_nick;
-
-
                 // Get users
                 let userList = data.users;
 
@@ -676,7 +693,7 @@ function addEvents()
 
                 // All good
                 initializeUserList(userList);
-                
+
                 // Display divs
                 elem('room-info-el').innerText = "Room code: " + currentRoom;
 
@@ -697,14 +714,17 @@ function addEvents()
         // Other join / left
         socket.on('room_update', (data) =>
         {
+            if (invalidDict(data, ['users'])) return;
             let userList = data.users;
-            let myIndex = data.my_index;
-            initializeUserList(userList, myIndex);
+            if (invalidStArray(userList)) return;
+            initializeUserList(userList);
         });
 
         // Lock request
         socket.on('lock', (data) =>
             {
+                const keys = ['lock'];
+                if (invalidDict(data, keys)) return;
                 onLock(data);
             });
 
