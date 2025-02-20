@@ -12,8 +12,8 @@ Ever wanted to explain something, and it was easier to draw it? <br>
 
 ###### <ins> How to run </ins>  <br>
 Requirements: 
-+ All .py files
-+ nicknames.json 
++ app.py
++ Files in folder 'src' 
 + Files in folder 'static'
 + Files in folder 'templates'
 
@@ -28,5 +28,5 @@ Running:
 + Type 'python app.py'
 + In the browser enter {localip}:{port}
 
-Port is 8080 by default. <br>
+Port is 8000 by default. <br>
 You can check your local ip by running 'ipconfig' in the command line.
