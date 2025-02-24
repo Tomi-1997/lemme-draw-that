@@ -1,11 +1,20 @@
-FROM python:3
+FROM python:alpine
 
-WORKDIR /usr/src/app
+WORKDIR /prod/webapp
+# Libraries - flask, socketio, gunicorn, eventlet
+COPY ./requirements.txt /requirements.txt
+RUN pip3 install --no-cache-dir -q -r /requirements.txt
 
-COPY requirements.txt ./
-RUN pip install --no-cache-dir -r requirements.txt
+# Source code
+COPY ./app .
 
-COPY . .
+# Gunicorn script
+COPY ./docker-entrypoint.sh .
+RUN chmod +x ./docker-entrypoint.sh
 
-EXPOSE 8000
-CMD ["python", "./app.py"]
+# Run as non-root user
+RUN adduser -D myuser
+RUN chown -R myuser:myuser /prod/webapp
+USER myuser
+
+ENTRYPOINT ["sh", "docker-entrypoint.sh"]

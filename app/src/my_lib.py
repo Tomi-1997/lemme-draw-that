@@ -1,6 +1,8 @@
 import random
 import string
 import re
+import os
+import json
 
 
 def random_str_(k):
@@ -26,8 +28,8 @@ def random_str(k, rooms):
 
 
 def get_nickname(room):
-    import json
-    with open('src\\nickname.json', 'r') as f:
+    filepath = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'nickname.json')
+    with open(filepath, 'r') as f:
         data = json.load(f)
     adj = data['adjectives']
     ani = data['animals']

@@ -1,6 +1,7 @@
 import time
 import hashlib
 from flask import Flask, render_template, request
+from werkzeug.middleware.proxy_fix import ProxyFix
 from flask_socketio import SocketIO, join_room, leave_room, disconnect
 from src.Room import Room
 from src.User import User
@@ -8,6 +9,7 @@ from src.my_lib import *
 from typing import Dict
 
 app = Flask(__name__)
+app.wsgi_app = ProxyFix(app.wsgi_app, x_proto=1, x_host=1)
 socket_io = SocketIO(app, manage_session=False)
 
 # {Code: Room}
