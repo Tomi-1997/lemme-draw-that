@@ -32,6 +32,7 @@ app.config['MAX_CONTENT_LENGTH'] = 128
 id_requests = {}
 _MILLI = 1000000  # Nano to milli
 _SEC = 1000 * _MILLI
+_MIN = _SEC * 60
 _REQUEST_DEFAULT = 0
 _REQUEST_DRAW = 1
 _REQUEST_HOST = 2
@@ -40,11 +41,15 @@ _REQUEST_CLEAR = 4
 _REQUEST_GUESS = 5
 _REQUEST_LOCK = 6
 
-
-# Once every 30 millisecond, minus discrepancies
+# draw ignore: Once every 30 millisecond, minus discrepancies
+# other: default
 request_dt_ignore = {_REQUEST_DRAW: 25 * _MILLI}
 request_dt_ignore_def = _SEC
+
+# (requests count, last request time)
 overall_requests = [0, time.time_ns()]
+# uid -> consecutive messages count (resets when a valid message arrives from uid)
+spam_counter = {}
 
 
 @app.route('/')
@@ -70,10 +75,13 @@ def send_room_data(event, data, include_self, room, src=None):
 
 
 def too_soon(uid, request_id=_REQUEST_DEFAULT):
+
+    # Log request count per minute, or since last request
     overall_requests[0] += 1
     diff = time.time_ns() - overall_requests[1]
-    if diff > _MILLI * 1000:
-        print(f"Requests in the last {diff}: {overall_requests[0]}")
+    if diff > _MIN:
+        diff_s = diff / _SEC
+        print(f"Unfiltered requests per {diff_s} sec: {overall_requests[0]}")
         overall_requests[0] = 0
         overall_requests[1] = time.time_ns()
     tup = (uid, request_id)
@@ -86,9 +94,18 @@ def too_soon(uid, request_id=_REQUEST_DEFAULT):
         # Compare difference to threshold
         threshold = request_dt_ignore.get(request_id, request_dt_ignore_def)
         if time_diff < threshold:
+
+            # Spams in a row
+            val = spam_counter.get(uid, 0) + 1
+            spam_counter[uid] = val
+            if val > 60:
+                print(f'Disconnecting {uid} for spamming')
+                disconnect(uid)
+                spam_counter[uid] = 0
             return True
 
     id_requests[tup] = time.time_ns()
+    spam_counter[uid] = 0
     return False
 
 
@@ -189,7 +206,6 @@ def handle_connect():
     # User connected to web
     # ☻ Wait for join \ host
 
-    client_ip = request.remote_addr
     sock_id = request.sid
     hashed_id = hash_ag_ip()
 
