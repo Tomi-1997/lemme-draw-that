@@ -19,14 +19,12 @@ let erasing = false;
 let drawing = false;
 let lastX = 0;
 let lastY = 0;
-let skip = false;
 const brushColor = '#dcdcdc';
 const brushSize = 1;
 const eraserSize = 40;
 let userColor = brushColor;
 let userSize = brushSize;
 let eraserRad = 0;
-
 let mobile_width = 300;
 
 
@@ -280,11 +278,18 @@ function onPress(e)
 }
 
 
+let currentTime = Date.now();
+let drawPerSecond = 1000 / 30; // 30 FPS
 // DRAW - Actually draw on canvas, and EMIT on socket
+// Server expects a draw every ~30ms, drawing faster
+// would result in many draws being ignored
 function onMove(e)
 {
-    skip = !skip;
-    if (skip) {return;}
+    if (Date.now() - currentTime < drawPerSecond)
+    {
+        return;
+    }
+    currentTime = Date.now();
     ctx.strokeStyle = userColor;
     ctx.lineWidth = userSize;
     pos = getPosition(e);

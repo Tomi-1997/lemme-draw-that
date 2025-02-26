@@ -9,6 +9,8 @@ from src.my_lib import *
 from typing import Dict
 
 app = Flask(__name__)
+
+# To get IP when ran in a container
 app.wsgi_app = ProxyFix(app.wsgi_app, x_proto=1, x_host=1)
 socket_io = SocketIO(app, manage_session=False)
 
@@ -19,7 +21,7 @@ id_to_room = {}
 # { SHA: ID}
 whitelist = {}
 # {Constants}
-_MAX_ROOM = 8  # Max rooms overall
+_MAX_ROOM = 64  # Max rooms overall
 _MAX_USERS = 8  # Max users for one room
 _ROOM_CODE_LEN = 6
 _PRINT = True
@@ -38,8 +40,11 @@ _REQUEST_CLEAR = 4
 _REQUEST_GUESS = 5
 _REQUEST_LOCK = 6
 
-request_dt_ignore = {_REQUEST_DRAW: 8 * _MILLI}
+
+# Once every 30 millisecond, minus discrepancies
+request_dt_ignore = {_REQUEST_DRAW: 25 * _MILLI}
 request_dt_ignore_def = _SEC
+overall_requests = [0, time.time_ns()]
 
 
 @app.route('/')
@@ -65,6 +70,12 @@ def send_room_data(event, data, include_self, room, src=None):
 
 
 def too_soon(uid, request_id=_REQUEST_DEFAULT):
+    overall_requests[0] += 1
+    diff = time.time_ns() - overall_requests[1]
+    if diff > _MILLI * 1000:
+        print(f"Requests in the last {diff}: {overall_requests[0]}")
+        overall_requests[0] = 0
+        overall_requests[1] = time.time_ns()
     tup = (uid, request_id)
     if tup in id_requests:
 
@@ -94,9 +105,9 @@ def handle_host():
     # ☻ Create room
     # ☻ Add to room, send data
 
-    print_if(f'[{now()}] {client_id} wants to host!')
+    print_if(f'{client_id} wants to host!')
     if client_id in id_to_room:
-        print_if(f'[{now()}] {client_id} wants to host, yet is in a room')
+        print_if(f'{client_id} wants to host, yet is in a room')
         return
 
     # Check for room limit
@@ -114,7 +125,7 @@ def handle_host():
 
     new_room = Room(room_code)
     rooms[room_code] = new_room
-    print_if(f'[{now()}] {client_id} now hosts room {new_room.code}!')
+    print_if(f'{client_id} now hosts room {new_room.code}!')
     add_id_to_room(uid=client_id, room_key=room_code, room_val=new_room)
 
 
@@ -124,7 +135,7 @@ def handle_join(data):
     if too_soon(client_id, _REQUEST_JOIN):
         return
 
-    print_if(f'[{now()}] {client_id} wants to join!')
+    print_if(f'{client_id} wants to join!')
 
     # User clicked on JOIN
     # ☻ Validate user input
@@ -185,21 +196,21 @@ def handle_connect():
     # First connection
     if hashed_id not in whitelist:
         whitelist[hashed_id] = sock_id
-        print_if(f'[{now()}] {sock_id} Connects from {client_ip}.')
+        print_if(f'New Socket:{sock_id}')
         send_private_data('connect_ok', data={'message': 'hi!'}, to=sock_id)
 
     else:
         # Hashed ID already is connected
         if whitelist[hashed_id] is not None:
-            print_if(f'[{now()}] {sock_id} Duplicate connection from {client_ip}.')
+            print_if(f'New Socket -DUPLICATE-:{sock_id}')
             socket_io.emit('duplicate', data={'message': 'bad'}, to=sock_id)
             disconnect(sock_id)
-            print_if(f'[{now()}] {sock_id} forcibly disconnected.')
+            print_if(f'New Socket -DISCONNECTED-:{sock_id}')
 
         else:
             # Hashed ID -was- connected
             whitelist[hashed_id] = sock_id
-            print_if(f'[{now()}] {sock_id} Reconnects from {client_ip}.')
+            print_if(f'New Socket Reconnect:{sock_id}')
             send_private_data('connect_ok', data={'message': 'hi!'}, to=sock_id)
 
 
@@ -213,7 +224,7 @@ def handle_disconnect():
 
     hashed_id = hash_ag_ip()
     sock_id = request.sid
-    print_if(f'[{now()}] {sock_id} DCs.')
+    print_if(f'{sock_id} Disconnects.')
     if hashed_id in whitelist:
         if whitelist[hashed_id] == sock_id:
             whitelist[hashed_id] = None
@@ -231,7 +242,7 @@ def handle_leave():
     # ☺ Remove
 
     client_id = request.sid
-    print_if(f'[{now()}] {client_id} Wants to leave.')
+    print_if(f'{client_id} Wants to leave room.')
     try_leave(client_id)
 
 
@@ -254,7 +265,8 @@ def add_id_to_room(uid, room_key, room_val):
     nickname = get_nickname(room_val)
     user = User(uid, nickname)
     room_val.add(user)
-    print_if(f'[{now()}] {uid} joins room {room_key} as {nickname}!')
+    print_if(f'{uid} joins room {room_key} as {nickname}!')
+    print_if("----ROOMS---")
     print_if(rooms)
 
     data = {'code': room_key,
@@ -286,15 +298,16 @@ def rm_id_from_room(uid, room_key, room_val):
 
     del id_to_room[uid]  # Remove from dict
     room_val.rm(uid)  # Room object remove
-    print_if(f'[{now()}] {uid} leaves room {room_key}!')
+    print_if(f'{uid} leaves room {room_key}!')
 
     if room_val.is_empty():  # Remove room, if empty
         del rooms[room_key]
-        print_if(f'[{now()}] {room_key} is empty, deleting.')
+        print_if(f'{room_key} is empty, deleting.')
         return
 
     # Not empty, notify others
     send_room_data('room_update', {'users': room_val.user_nicks()}, room=room_key, include_self=False)
+    print_if("----ROOMS---")
     print_if(rooms)
 
 
@@ -339,7 +352,7 @@ def handle_clear():
 
     # Data okay, clear board
     room = id_to_room[client_id].code
-    print_if(f'[{now()}] {client_id} Clears board in room {room}.')
+    print_if(f'{client_id} Clears board in room {room}.')
 
     # Notify, clear board mem
     send_room_data('clear', {}, include_self=True, room=room, src=client_id)
@@ -362,7 +375,7 @@ def handle_guess(data):
 
     # Data ok, send others guess
     room = id_to_room[client_id].code
-    print_if(f'[{now()}] {client_id} Sends a guess in room {room}.')
+    print_if(f'{client_id} Sends a guess in room {room}.')
     send_room_data('guess', data, include_self=False, room=room, src=client_id)
 
 
@@ -380,7 +393,7 @@ def handle_lock():
 
     # Data okay, send room lock state
     room = id_to_room[client_id].code
-    print_if(f'[{now()}] {client_id} Sends a lock \\ unlock request in room {room}.')
+    print_if(f'{client_id} Sends a lock \\ unlock request in room {room}.')
     rooms[room].lock_unlock()
     send_room_data('lock', {'lock': rooms[room].locked()}, include_self=True, room=room, src=client_id)
 
@@ -390,7 +403,7 @@ def now():
 
 
 def damn(func, uid):
-    print(f'[{now()}] {uid} Gave invalid data at {func}().')
+    print(f'{uid} Gave invalid data at {func}().')
 
 
 def print_if(text):
